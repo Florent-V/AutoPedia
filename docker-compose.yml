@@ -1,0 +1,51 @@
+name: autopedia
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: autopedia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autopedia}
+      POSTGRES_DB: autopedia
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autopedia -d autopedia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://autopedia:${POSTGRES_PASSWORD:-autopedia}@db:5432/autopedia
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Définissez BETTER_AUTH_SECRET dans .env}
+      BETTER_AUTH_URL: ${PUBLIC_URL:-http://localhost:3000}
+      WEB_ORIGIN: ${PUBLIC_URL:-http://localhost:3000}
+      PORT: 3001
+      BOOSTER_REGEN_MINUTES: ${BOOSTER_REGEN_MINUTES:-30}
+      BOOSTER_MAX: ${BOOSTER_MAX:-10}
+      CARDS_PER_BOOSTER: ${CARDS_PER_BOOSTER:-5}
+      CATALOG_AUTO_IMPORT: ${CATALOG_AUTO_IMPORT:-wikidata}
+      CATALOG_IMPORT_LIMIT: ${CATALOG_IMPORT_LIMIT:-3000}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NUXT_API_BASE: http://api:3001
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  pgdata:

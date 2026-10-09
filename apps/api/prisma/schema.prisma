@@ -1,0 +1,181 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Authentification (schéma attendu par Better Auth)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  player         Player?
+  cards          UserCard[]
+  openings       BoosterOpening[]
+  achievements   UserAchievement[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Jeu
+// ---------------------------------------------------------------------------
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+/// Une carte du catalogue = un modèle de voiture (source : Wikidata / Wikipedia).
+model Car {
+  id             Int      @id @default(autoincrement())
+  /// Identifiant Wikidata (ex. Q172146) ou "seed:<slug>" pour le jeu de secours.
+  externalId     String   @unique
+  name           String
+  manufacturer   String?
+  country        String?
+  yearStart      Int?
+  yearEnd        Int?
+  imageUrl       String?
+  /// Titre de l'article Wikipédia (fr si disponible, sinon en).
+  wikiTitle      String?
+  wikiLang       String?
+  /// Résumé Wikipédia, mis en cache à la première consultation.
+  summary        String?
+  summaryFetchedAt DateTime?
+  powerKw        Float?
+  topSpeedKmh    Float?
+  massKg         Float?
+  /// Indicateur de notoriété (nombre d'articles Wikipédia liés) : sert à calculer la rareté.
+  popularity     Int      @default(0)
+  rarity         Rarity   @default(COMMON)
+  /// Permet de forcer manuellement une rareté (non écrasée par les imports).
+  rarityOverride Rarity?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  owners UserCard[]
+
+  @@index([rarity, active])
+  @@index([manufacturer])
+  @@map("car")
+}
+
+/// État de jeu d'un joueur (réserve de boosters, statistiques).
+model Player {
+  userId          String   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Boosters disponibles au moment de `boosterAnchor`.
+  boosters        Int
+  /// Point de départ du minuteur de régénération.
+  boosterAnchor   DateTime @default(now())
+  boostersOpened  Int      @default(0)
+  cardsObtained   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("player")
+}
+
+/// Cartes possédées. Une ligne par (joueur, carte) avec un nombre d'exemplaires :
+/// ce modèle permettra plus tard l'échange de doublons entre amis.
+model UserCard {
+  userId          String
+  carId           Int
+  quantity        Int      @default(1)
+  firstObtainedAt DateTime @default(now())
+  lastObtainedAt  DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car             Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@id([userId, carId])
+  @@index([carId])
+  @@map("user_card")
+}
+
+/// Historique des ouvertures de boosters.
+model BoosterOpening {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carIds    Int[]
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("booster_opening")
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+  @@map("user_achievement")
+}
