@@ -14,9 +14,7 @@ withDefaults(defineProps<{ tearing?: boolean; disabled?: boolean; label?: string
     <div class="pack__body">
       <div class="pack__foil" />
       <div class="pack__content">
-        <div class="pack__brand">
-          <span>Auto</span><span>Pedia</span>
-        </div>
+        <div class="pack__brand"><AppLogo /></div>
         <div class="pack__stripe" />
         <CarLineArt class="pack__car" />
         <div class="pack__label">{{ label }}</div>
@@ -106,20 +104,15 @@ withDefaults(defineProps<{ tearing?: boolean; disabled?: boolean; label?: string
 
 .pack__brand {
   font-family: var(--font-display);
-  font-size: 15cqw;
+  font-size: 13cqw;
   line-height: 1;
-  transform: rotate(-6deg);
-  text-shadow:
-    0 3px 0 rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(255, 176, 32, 0.4);
-}
-
-.pack__brand span:first-child {
   color: #fff;
+  transform: rotate(-6deg);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-.pack__brand span:last-child {
-  color: var(--accent-2);
+.pack__brand :deep(.logo__mark) {
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4));
 }
 
 .pack__stripe {

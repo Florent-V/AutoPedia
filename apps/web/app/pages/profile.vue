@@ -56,6 +56,8 @@ const stats = computed(() => {
       </div>
     </section>
 
+    <AppSettings />
+
     <section class="panel social">
       <h2>Bientôt : amis & échanges</h2>
       <p class="muted">
@@ -91,6 +93,22 @@ const stats = computed(() => {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat {
+    padding: 12px;
+  }
+  .stat strong {
+    font-size: 1.4rem;
+  }
+  .stat .muted {
+    font-size: 0.8rem;
+  }
 }
 
 .stat {

@@ -1,9 +1,6 @@
 <script setup lang="ts">
 const session = useSessionState();
 const player = usePlayerState();
-const menuOpen = ref(false);
-const route = useRoute();
-watch(() => route.fullPath, () => (menuOpen.value = false));
 
 const links = [
   { to: '/boosters', label: 'Boosters' },
@@ -16,16 +13,15 @@ const links = [
 <template>
   <header class="header">
     <div class="container header__inner">
-      <NuxtLink to="/" class="logo"><span>Auto</span><span>Pedia</span></NuxtLink>
+      <NuxtLink to="/" class="brand"><AppLogo /></NuxtLink>
 
       <template v-if="session">
-        <nav class="nav" :class="{ open: menuOpen }">
+        <nav class="nav">
           <NuxtLink v-for="l in links" :key="l.to" :to="l.to" class="nav__link">{{ l.label }}</NuxtLink>
         </nav>
         <div class="header__right">
           <BoosterCounter />
           <span v-if="player" class="chip points" title="Points de collection">⭐ {{ formatNumber(player.stats.points) }}</span>
-          <button class="burger" aria-label="Menu" @click="menuOpen = !menuOpen">☰</button>
         </div>
       </template>
       <div v-else class="header__right">
@@ -40,6 +36,7 @@ const links = [
 .header {
   position: sticky;
   top: 0;
+  padding-top: env(safe-area-inset-top);
   z-index: 20;
   background: rgba(11, 15, 23, 0.82);
   backdrop-filter: blur(10px);
@@ -53,14 +50,9 @@ const links = [
   height: 64px;
 }
 
-.logo {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+.brand {
+  font-size: 1.45rem;
   text-decoration: none;
-}
-
-.logo span:last-child {
-  color: var(--accent-2);
 }
 
 .nav {
@@ -89,37 +81,9 @@ const links = [
   gap: 8px;
 }
 
-.burger {
-  display: none;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 10px;
-  font-size: 1.2rem;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
 @media (max-width: 860px) {
-  .burger {
-    display: block;
-  }
-  .points {
-    display: none;
-  }
   .nav {
     display: none;
-    position: absolute;
-    top: 64px;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    padding: 12px 16px;
-    background: var(--bg-2);
-    border-bottom: 1px solid var(--border);
-  }
-  .nav.open {
-    display: flex;
   }
 }
 
@@ -128,6 +92,12 @@ const links = [
     gap: 10px;
   }
   .counter .muted {
+    font-size: 0.75rem;
+  }
+  .brand {
+    font-size: 1.25rem;
+  }
+  .points {
     display: none;
   }
 }

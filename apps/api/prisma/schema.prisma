@@ -23,10 +23,11 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  player         Player?
-  cards          UserCard[]
-  openings       BoosterOpening[]
-  achievements   UserAchievement[]
+  player            Player?
+  cards             UserCard[]
+  openings          BoosterOpening[]
+  achievements      UserAchievement[]
+  pushSubscriptions PushSubscription[]
 
   @@map("user")
 }
@@ -92,32 +93,32 @@ enum Rarity {
 
 /// Une carte du catalogue = un modèle de voiture (source : Wikidata / Wikipedia).
 model Car {
-  id             Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   /// Identifiant Wikidata (ex. Q172146) ou "seed:<slug>" pour le jeu de secours.
-  externalId     String   @unique
-  name           String
-  manufacturer   String?
-  country        String?
-  yearStart      Int?
-  yearEnd        Int?
-  imageUrl       String?
+  externalId       String    @unique
+  name             String
+  manufacturer     String?
+  country          String?
+  yearStart        Int?
+  yearEnd          Int?
+  imageUrl         String?
   /// Titre de l'article Wikipédia (fr si disponible, sinon en).
-  wikiTitle      String?
-  wikiLang       String?
+  wikiTitle        String?
+  wikiLang         String?
   /// Résumé Wikipédia, mis en cache à la première consultation.
-  summary        String?
+  summary          String?
   summaryFetchedAt DateTime?
-  powerKw        Float?
-  topSpeedKmh    Float?
-  massKg         Float?
+  powerKw          Float?
+  topSpeedKmh      Float?
+  massKg           Float?
   /// Indicateur de notoriété (nombre d'articles Wikipédia liés) : sert à calculer la rareté.
-  popularity     Int      @default(0)
-  rarity         Rarity   @default(COMMON)
+  popularity       Int       @default(0)
+  rarity           Rarity    @default(COMMON)
   /// Permet de forcer manuellement une rareté (non écrasée par les imports).
-  rarityOverride Rarity?
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  rarityOverride   Rarity?
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   owners UserCard[]
 
@@ -128,16 +129,18 @@ model Car {
 
 /// État de jeu d'un joueur (réserve de boosters, statistiques).
 model Player {
-  userId          String   @id
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String    @id
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Boosters disponibles au moment de `boosterAnchor`.
-  boosters        Int
+  boosters           Int
   /// Point de départ du minuteur de régénération.
-  boosterAnchor   DateTime @default(now())
-  boostersOpened  Int      @default(0)
-  cardsObtained   Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  boosterAnchor      DateTime  @default(now())
+  /// Ancre pour laquelle la notification « réserve pleine » a déjà été envoyée.
+  fullNotifiedAnchor DateTime?
+  boostersOpened     Int       @default(0)
+  cardsObtained      Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@map("player")
 }
@@ -178,4 +181,19 @@ model UserAchievement {
 
   @@id([userId, achievementId])
   @@map("user_achievement")
+}
+
+/// Abonnement Web Push d'un appareil (PWA installée ou navigateur).
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscription")
 }

@@ -1,5 +1,5 @@
 export const USER_AGENT =
-  process.env.WIKI_USER_AGENT ?? 'AutoPedia/0.1 (jeu de collection de cartes; https://github.com/florent-v/autopedia)';
+  process.env.WIKI_USER_AGENT ?? 'GarageCardGame/0.1 (jeu de collection de cartes; https://github.com/florent-v/autopedia)';
 
 export async function fetchJson<T>(url: string, init: RequestInit = {}, timeoutMs = 10_000): Promise<T> {
   const controller = new AbortController();

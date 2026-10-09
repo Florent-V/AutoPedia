@@ -14,6 +14,8 @@ import { HealthController } from './health.controller';
 import { PlayerController } from './player/player.controller';
 import { PlayerService } from './player/player.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { PushController } from './push/push.controller';
+import { PushService } from './push/push.service';
 
 @Module({
   imports: [PrismaModule, AuthModule],
@@ -25,7 +27,8 @@ import { PrismaModule } from './prisma/prisma.module';
     CarsController,
     AchievementsController,
     CatalogController,
+    PushController,
   ],
-  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService],
+  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, PushService],
 })
 export class AppModule {}

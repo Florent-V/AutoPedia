@@ -26,7 +26,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port, '0.0.0.0');
-  Logger.log(`API AutoPedia démarrée sur le port ${port}`, 'Bootstrap');
+  Logger.log(`API Garage démarrée sur le port ${port}`, 'Bootstrap');
 }
 
 void bootstrap();

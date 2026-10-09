@@ -60,6 +60,8 @@ function close() {
       </div>
     </div>
 
+    <InstallCard />
+
     <section class="stock">
       <button
         v-for="i in max"
@@ -133,8 +135,22 @@ function close() {
 
 @media (max-width: 700px) {
   .stock {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 10px 8px;
+  }
+  .stock__eta {
+    font-size: 0.7rem;
+  }
+  .cta {
+    position: sticky;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    margin-top: 24px;
+  }
+  .cta .btn {
+    width: 100%;
+  }
+  .timer {
+    min-width: 0;
+    width: 100%;
   }
 }
 

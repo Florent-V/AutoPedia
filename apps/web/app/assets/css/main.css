@@ -32,6 +32,7 @@
 html,
 body {
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
@@ -92,6 +93,21 @@ h1 {
 
 .muted {
   color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  .app-main.with-tabs {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+  .page {
+    padding-top: 18px;
+  }
+}
+
+button,
+a,
+select {
+  touch-action: manipulation;
 }
 
 /* Boutons */

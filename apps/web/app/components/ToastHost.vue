@@ -60,6 +60,26 @@ const { toasts, dismiss } = useToasts();
   border-color: var(--r-legendary);
 }
 
+@media (max-width: 860px) {
+  .toasts {
+    top: calc(10px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    gap: 6px;
+  }
+  .toast {
+    padding: 8px 12px;
+  }
+  .toast small {
+    display: none;
+  }
+  .toast__icon {
+    font-size: 1.3rem;
+  }
+}
+
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.3s ease;
@@ -68,6 +88,6 @@ const { toasts, dismiss } = useToasts();
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateY(-20px);
 }
 </style>

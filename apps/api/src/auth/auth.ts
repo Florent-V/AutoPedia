@@ -15,7 +15,7 @@ export function createAuth(prisma: PrismaClient) {
     .filter(Boolean);
 
   return betterAuth({
-    appName: 'AutoPedia',
+    appName: 'Garage',
     secret: secret ?? 'dev-only-insecure-secret-please-change',
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
     basePath: '/api/auth',

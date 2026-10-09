@@ -1,4 +1,4 @@
-# AutoPedia 🏎️
+# Garage 🏎️
 
 Jeu de collection de cartes sur le thème de l'automobile, inspiré de Wiki-Masters et TCGeo.
 Chaque carte est un vrai modèle de voiture, avec ses données issues de **Wikidata** et son résumé tiré de **Wikipédia**.
@@ -8,6 +8,7 @@ Chaque carte est un vrai modèle de voiture, avec ses données issues de **Wikid
 - Il y a **5 raretés**, qui valent plus ou moins de points. Les cartes *Épique* et *Légendaire* sont holographiques.
 - On peut parcourir sa collection avec des filtres et voir le détail de chaque carte (fiche technique, résumé Wikipédia).
 - Il y a **24 succès / badges** (boosters, collection, rareté, exploration, score).
+- C'est une **application mobile installable (PWA)** : barre d'onglets, révélation des cartes une par une au toucher ou par glissement, vibrations sur les cartes rares (Android), et notification quand la réserve de boosters est pleine.
 
 ## Stack
 
@@ -92,6 +93,16 @@ Le **score de collection** est la somme des points des cartes différentes poss�
 
 Ils sont définis de façon déclarative dans `apps/api/src/achievements/achievements.definitions.ts`. Chaque succès associe une statistique (boosters ouverts, cartes uniques, légendaires, cartes d'un même constructeur, pays, décennies, points…) à un objectif. Pour en ajouter un, il suffit d'ajouter une ligne. Les succès sont évalués à chaque ouverture et notifiés côté front.
 
+## Application mobile (PWA)
+
+- **Installation :** sur Android et sur ordinateur (Chrome, Edge), un bouton « Installer » apparaît sur la page Boosters et dans le Profil. Sur iPhone, il faut passer par Safari : **Partager** puis **Sur l'écran d'accueil**. Le jeu s'ouvre alors en plein écran, comme une application.
+- **Hors-ligne :** un service worker (`apps/web/public/sw.js`) met en cache l'interface. L'API n'est jamais mise en cache, pour que l'état du jeu reste toujours à jour.
+- **Notifications :** quand la réserve d'un joueur abonné atteint son maximum, l'API lui envoie **une seule** notification Web Push, puis attend qu'il ouvre un booster avant de pouvoir le prévenir à nouveau. Le joueur les active dans **Profil > Application**. Sur iPhone, les notifications ne marchent que si l'application est installée (iOS 16.4 ou plus).
+  - Générer les clés avec `npx web-push generate-vapid-keys`, puis renseigner `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT` dans `.env`. Sans ces clés, les notifications sont simplement désactivées.
+  - Le serveur vérifie les réserves toutes les 60 secondes (`PUSH_CHECK_SECONDS`).
+- **HTTPS :** l'installation et les notifications exigent que le site soit servi en HTTPS (sauf sur `localhost`).
+- **App Store / Play Store :** la même base pourra être enveloppée avec Capacitor, sans réécrire le front.
+
 ## Source des données
 
 - **Wikidata** (licence CC0) : on récupère les instances de « modèle d'automobile » (`Q3231690`) et de ses sous-classes qui ont une image, avec le constructeur, le pays, les années, la puissance, la vitesse maximale, la masse et les titres Wikipédia fr/en. L'import se fait en deux étapes : une liste triée par notoriété, puis les détails par lots de 80. Voir `apps/api/src/catalog/wikidata.ts`.
@@ -114,12 +125,14 @@ Toutes les routes sont préfixées par `/api` et demandent une session, sauf ind
 | GET | `/collection/summary` | Progression par rareté et par constructeur |
 | GET | `/cars/:id` | Détail d'une carte, avec le résumé Wikipédia |
 | GET | `/achievements` | Succès avec progression |
+| GET | `/push/public-key` | Public : clé VAPID (ou `null` si les notifications sont désactivées) |
+| POST | `/push/subscribe` · `/push/unsubscribe` · `/push/test` | Gestion des notifications de l'appareil |
 | GET | `/health` | Public : état de l'API et taille du catalogue |
 
 ## Sécurité
 
 - Les mots de passe sont hachés par Better Auth (scrypt). Les sessions sont stockées en base, dans des cookies httpOnly, avec l'attribut `Secure` automatiquement activé en HTTPS.
-- Rate limiting : 10 tentatives de connexion et 5 inscriptions par minute et par IP.
+- Rate limiting : 10 tentatives de connexion et 5 inscriptions par minute et par IP. Le proxy Nuxt transmet l'IP du joueur à l'API. Si un reverse proxy (Caddy, Traefik, Nginx…) est placé devant le site, mettre `TRUST_PROXY=true` pour que l'IP d'origine soit lue dans `X-Forwarded-For`. Sans reverse proxy, laisser `false`, sinon un joueur pourrait falsifier son IP.
 - Le front et l'API partagent la même origine grâce au proxy Nitro, donc pas de cookies tiers. `trustedOrigins` protège contre le CSRF.
 - Toutes les routes métier passent par un guard global. La validation des entrées se fait avec `class-validator`.
 

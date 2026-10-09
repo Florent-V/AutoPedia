@@ -27,6 +27,10 @@ const data = ref<Page | null>(null);
 const summary = ref<Summary | null>(null);
 const loading = ref(false);
 const selected = ref<number | null>(null);
+const filtersOpen = ref(false);
+const activeFilters = computed(
+  () => [filters.search, filters.rarity, filters.manufacturer].filter(Boolean).length + (filters.owned !== 'all' ? 1 : 0),
+);
 
 const totalOwned = computed(() => summary.value?.rarities.reduce((s, r) => s + r.owned, 0) ?? 0);
 const totalCards = computed(() => summary.value?.rarities.reduce((s, r) => s + r.total, 0) ?? 0);
@@ -95,7 +99,10 @@ onMounted(async () => {
       </button>
     </section>
 
-    <section class="filters panel">
+    <button class="btn filters-toggle" :aria-expanded="filtersOpen" @click="filtersOpen = !filtersOpen">
+      Filtres<span v-if="activeFilters"> ({{ activeFilters }})</span> {{ filtersOpen ? '▲' : '▼' }}
+    </button>
+    <section class="filters panel" :class="{ open: filtersOpen }">
       <input v-model="filters.search" class="input" type="search" placeholder="Rechercher un modèle ou une marque…" aria-label="Recherche" />
       <select v-model="filters.manufacturer" class="select" aria-label="Constructeur">
         <option value="">Tous les constructeurs</option>
@@ -151,8 +158,24 @@ onMounted(async () => {
 
 @media (max-width: 800px) {
   .rarity-bars {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -16px 12px;
+    padding: 2px 16px 6px;
+    scrollbar-width: none;
   }
+  .rarity-bars::-webkit-scrollbar {
+    display: none;
+  }
+  .rarity-bar {
+    flex: 0 0 132px;
+    scroll-snap-align: start;
+  }
+}
+
+.filters-toggle {
+  display: none;
 }
 
 .rarity-bar {
@@ -211,8 +234,17 @@ onMounted(async () => {
 }
 
 @media (max-width: 800px) {
+  .filters-toggle {
+    display: flex;
+    width: 100%;
+    margin-bottom: 12px;
+  }
   .filters {
+    display: none;
     grid-template-columns: 1fr 1fr;
+  }
+  .filters.open {
+    display: grid;
   }
   .filters .input {
     grid-column: 1 / -1;

@@ -8,6 +8,8 @@ const emit = defineEmits<{ close: []; another: [] }>();
 
 type Phase = 'pack' | 'tearing' | 'cards';
 const phase = ref<Phase>('pack');
+const isMobile = ref(false);
+const deckDone = ref(false);
 const torn = ref(false);
 const flipped = ref<boolean[]>([]);
 
@@ -46,6 +48,11 @@ function flip(i: number) {
   flipped.value[i] = true;
 }
 
+function finishDeck() {
+  flipped.value = cards.value.map(() => true);
+  deckDone.value = true;
+}
+
 function flipAll() {
   cards.value.forEach((_, i) => setTimeout(() => flip(i), i * 180));
 }
@@ -58,13 +65,18 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKey));
+onMounted(() => {
+  isMobile.value = window.matchMedia('(max-width: 700px)').matches;
+  window.addEventListener('keydown', onKey);
+});
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 </script>
 
 <template>
   <div class="opening" role="dialog" aria-modal="true" aria-label="Ouverture du booster">
-    <div class="opening__rays" :class="best && allFlipped ? `rays-${best.rarity.toLowerCase()}` : ''" />
+    <div class="opening__raysbox" aria-hidden="true">
+      <div class="opening__rays" :class="best && allFlipped ? `rays-${best.rarity.toLowerCase()}` : ''" />
+    </div>
 
     <div v-if="error" class="opening__center">
       <p class="error">{{ error }}</p>
@@ -75,11 +87,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
       <button type="button" class="opening__pack" :class="{ shake: phase === 'pack' }" @click="tear">
         <BoosterPack :tearing="torn" />
       </button>
-      <p class="opening__hint">{{ phase === 'pack' ? 'Cliquez pour déchirer le booster' : 'Ouverture…' }}</p>
+      <p class="opening__hint">{{ phase === 'pack' ? `${isMobile ? 'Touchez' : 'Cliquez'} pour déchirer le booster` : 'Ouverture…' }}</p>
+    </div>
+
+    <div v-else-if="isMobile && !deckDone" class="opening__cards">
+      <MobileReveal :cards="cards" @done="finishDeck" />
+      <div class="opening__actions">
+        <button class="btn btn-ghost" @click="finishDeck">Tout révéler</button>
+      </div>
     </div>
 
     <div v-else class="opening__cards">
-      <div class="opening__row">
+      <div class="opening__row" :class="{ recap: isMobile }">
         <div
           v-for="(card, i) in cards"
           :key="`${card.id}-${i}`"
@@ -118,15 +137,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   z-index: 50;
   display: grid;
   place-items: center;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 24px 16px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
   background: radial-gradient(circle at 50% 40%, rgba(30, 20, 40, 0.92), rgba(5, 7, 12, 0.97));
   backdrop-filter: blur(6px);
   animation: fade-in 0.25s ease;
 }
 
-.opening__rays {
+.opening__raysbox {
   position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.opening__rays {
+  position: absolute;
   inset: -50%;
   pointer-events: none;
   opacity: 0;
@@ -202,6 +230,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   .opening__row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+  .opening__row.recap {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 }
 
