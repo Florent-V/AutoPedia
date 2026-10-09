@@ -18,7 +18,7 @@ withDefaults(defineProps<{ tearing?: boolean; disabled?: boolean; label?: string
           <span>Auto</span><span>Pedia</span>
         </div>
         <div class="pack__stripe" />
-        <CarSilhouette class="pack__car" />
+        <CarLineArt class="pack__car" />
         <div class="pack__label">{{ label }}</div>
         <div class="pack__count">5 cartes</div>
       </div>
@@ -134,8 +134,8 @@ withDefaults(defineProps<{ tearing?: boolean; disabled?: boolean; label?: string
 .pack__car {
   width: 85cqw;
   margin-top: auto;
-  color: rgba(0, 0, 0, 0.55);
-  filter: drop-shadow(0 0 10px rgba(255, 176, 32, 0.5));
+  color: #ffd27a;
+  filter: drop-shadow(0 0 8px rgba(255, 176, 32, 0.6));
 }
 
 .pack__label {

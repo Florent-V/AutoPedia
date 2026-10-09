@@ -72,7 +72,8 @@ h1 {
 }
 
 .page {
-  padding: 28px 0 64px;
+  padding-top: 28px;
+  padding-bottom: 64px;
 }
 
 .page-head {

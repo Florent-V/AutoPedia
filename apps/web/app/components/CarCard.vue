@@ -79,8 +79,9 @@ const stats = computed(() => [
             @error="imageFailed = true"
           />
           <div v-else class="car-card__placeholder">
-            <CarSilhouette />
-            <span v-if="!locked && card.manufacturer">{{ card.manufacturer }}</span>
+            <span class="car-card__ref">N° {{ String(card.id).padStart(4, '0') }}</span>
+            <CarLineArt :year="card.yearStart" />
+            <span v-if="!locked && card.manufacturer" class="car-card__mono">{{ card.manufacturer }}</span>
           </div>
           <span v-if="card.quantity && card.quantity > 1" class="car-card__qty">×{{ card.quantity }}</span>
           <span v-if="card.isNew" class="car-card__new">Nouveau</span>
@@ -250,6 +251,14 @@ const stats = computed(() => [
     linear-gradient(180deg, #e9eef6, #b9c3d3);
 }
 
+.car-card__art:has(.car-card__placeholder) {
+  background:
+    radial-gradient(90% 70% at 50% 100%, color-mix(in srgb, var(--c) 35%, transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb, var(--c) 14%, transparent) 1px, transparent 1px) 0 0 / 6cqw 6cqw,
+    linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, transparent) 1px, transparent 1px) 0 0 / 6cqw 6cqw,
+    linear-gradient(180deg, #0d1422, #070b13);
+}
+
 .car-card__art img {
   width: 100%;
   height: 100%;
@@ -263,16 +272,30 @@ const stats = computed(() => [
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 2cqw;
-  padding: 8cqw;
-  color: color-mix(in srgb, var(--c2) 80%, #000);
-  font: 700 5cqw var(--font-display);
-  text-transform: uppercase;
-  opacity: 0.85;
+  gap: 3cqw;
+  padding: 6cqw;
+  color: color-mix(in srgb, var(--c) 85%, #fff);
 }
 
 .car-card__placeholder :deep(svg) {
-  width: 75cqw;
+  width: 72cqw;
+  filter: drop-shadow(0 0 2cqw color-mix(in srgb, var(--c) 60%, transparent));
+}
+
+.car-card__ref {
+  position: absolute;
+  left: 3cqw;
+  bottom: 2.4cqw;
+  font: 600 3.4cqw ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.car-card__mono {
+  font: 600 3.8cqw ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  opacity: 0.75;
 }
 
 .car-card__qty,
@@ -469,6 +492,6 @@ const stats = computed(() => [
 }
 
 .locked .car-card__placeholder {
-  color: #0b0f17;
+  color: #8b97b0;
 }
 </style>
