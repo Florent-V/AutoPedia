@@ -8,16 +8,19 @@ export interface Card {
   yearStart: number | null;
   yearEnd: number | null;
   imageUrl: string | null;
+  racing?: boolean;
   rarity: Rarity;
   points: number;
   powerHp: number | null;
   topSpeedKmh: number | null;
   massKg: number | null;
+  lengthMm?: number | null;
   wikiUrl: string | null;
   quantity?: number;
   isNew?: boolean;
   firstObtainedAt?: string | null;
   summary?: string | null;
+  imageCredit?: { author: string | null; license: string | null; licenseUrl: string | null; sourceUrl: string } | null;
 }
 
 export interface BoosterView {
@@ -38,6 +41,7 @@ export interface Stats {
   rare: number;
   epic: number;
   legendary: number;
+  racing?: number;
   maxPerBrand: number;
   countries: number;
   decades: number;

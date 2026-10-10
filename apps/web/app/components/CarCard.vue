@@ -46,11 +46,20 @@ const style = computed(() => {
   };
 });
 
-const stats = computed(() => [
-  { label: 'ch', value: props.card.powerHp },
-  { label: 'km/h', value: props.card.topSpeedKmh },
-  { label: 'kg', value: props.card.massKg },
-]);
+/** Trois caractéristiques affichées : les premières disponibles, dans cet ordre de préférence. */
+const stats = computed(() => {
+  const all = [
+    { label: 'ch', value: props.card.powerHp ? formatNumber(props.card.powerHp) : null },
+    { label: 'km/h', value: props.card.topSpeedKmh ? formatNumber(props.card.topSpeedKmh) : null },
+    { label: 'kg', value: props.card.massKg ? formatNumber(props.card.massKg) : null },
+    {
+      label: 'm',
+      value: props.card.lengthMm ? (props.card.lengthMm / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : null,
+    },
+  ];
+  const known = all.filter((s) => s.value);
+  return [...known, ...all.filter((s) => !s.value)].slice(0, 3);
+});
 </script>
 
 <template>
@@ -85,6 +94,7 @@ const stats = computed(() => [
           </div>
           <span v-if="card.quantity && card.quantity > 1" class="car-card__qty">×{{ card.quantity }}</span>
           <span v-if="card.isNew" class="car-card__new">Nouveau</span>
+          <span v-if="card.racing" class="car-card__race" title="Voiture de course">🏁</span>
         </div>
 
         <div class="car-card__info">
@@ -98,7 +108,7 @@ const stats = computed(() => [
 
         <ul v-if="size !== 'sm'" class="car-card__stats">
           <li v-for="s in stats" :key="s.label">
-            <strong>{{ locked || !s.value ? '—' : formatNumber(s.value) }}</strong>
+            <strong>{{ locked || !s.value ? '—' : s.value }}</strong>
             <span>{{ s.label }}</span>
           </li>
         </ul>
@@ -305,6 +315,16 @@ const stats = computed(() => [
   padding: 0.8cqw 2.6cqw;
   border-radius: 999px;
   font: 700 4.2cqw var(--font-body);
+}
+
+.car-card__race {
+  position: absolute;
+  left: 2cqw;
+  bottom: 2cqw;
+  padding: 0.6cqw 1.8cqw;
+  border-radius: 999px;
+  font-size: 4.4cqw;
+  background: rgba(0, 0, 0, 0.65);
 }
 
 .car-card__qty {

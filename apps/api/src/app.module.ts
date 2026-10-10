@@ -8,6 +8,7 @@ import { CarsController } from './cars/cars.controller';
 import { CarsService } from './cars/cars.service';
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogService } from './catalog/catalog.service';
+import { MediaService } from './catalog/media.service';
 import { CollectionController } from './collection/collection.controller';
 import { CollectionService } from './collection/collection.service';
 import { HealthController } from './health.controller';
@@ -29,6 +30,6 @@ import { PushService } from './push/push.service';
     CatalogController,
     PushController,
   ],
-  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, PushService],
+  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, MediaService, PushService],
 })
 export class AppModule {}

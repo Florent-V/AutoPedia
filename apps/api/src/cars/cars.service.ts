@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { fetchWikiSummary } from '../catalog/http';
-import { toCardDto } from './card.dto';
+import { imageCreditOf, toCardDto } from './card.dto';
 
 const SUMMARY_TTL_MS = 30 * 24 * 3600 * 1000;
 
@@ -24,7 +24,6 @@ export class CarsService {
           data: {
             summary: summary.extract ?? car.summary,
             summaryFetchedAt: new Date(),
-            imageUrl: car.imageUrl ?? summary.originalimage?.source ?? summary.thumbnail?.source ?? null,
           },
         });
       } catch (err) {
@@ -36,6 +35,7 @@ export class CarsService {
     return {
       ...toCardDto(car),
       summary: car.summary,
+      imageCredit: imageCreditOf(car),
       quantity: owned?.quantity ?? 0,
       firstObtainedAt: owned?.firstObtainedAt ?? null,
     };

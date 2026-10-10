@@ -18,6 +18,7 @@ const filters = reactive({
   search: (route.query.search as string) ?? '',
   rarity: (route.query.rarity as string) ?? '',
   manufacturer: (route.query.manufacturer as string) ?? '',
+  category: (route.query.category as string) ?? '',
   owned: (route.query.owned as string) ?? 'all',
   sort: (route.query.sort as string) ?? 'rarity',
   page: Number(route.query.page ?? 1),
@@ -29,7 +30,9 @@ const loading = ref(false);
 const selected = ref<number | null>(null);
 const filtersOpen = ref(false);
 const activeFilters = computed(
-  () => [filters.search, filters.rarity, filters.manufacturer].filter(Boolean).length + (filters.owned !== 'all' ? 1 : 0),
+  () =>
+    [filters.search, filters.rarity, filters.manufacturer, filters.category].filter(Boolean).length +
+    (filters.owned !== 'all' ? 1 : 0),
 );
 
 const totalOwned = computed(() => summary.value?.rarities.reduce((s, r) => s + r.owned, 0) ?? 0);
@@ -42,6 +45,7 @@ async function load() {
   if (filters.search) query.search = filters.search;
   if (filters.rarity) query.rarity = filters.rarity;
   if (filters.manufacturer) query.manufacturer = filters.manufacturer;
+  if (filters.category) query.category = filters.category;
   void router.replace({ query: { ...query, pageSize: undefined } });
   try {
     data.value = await api<Page>('/collection', { query });
@@ -52,7 +56,7 @@ async function load() {
 
 let debounce: ReturnType<typeof setTimeout> | undefined;
 watch(
-  () => [filters.search, filters.rarity, filters.manufacturer, filters.owned, filters.sort],
+  () => [filters.search, filters.rarity, filters.manufacturer, filters.category, filters.owned, filters.sort],
   () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
@@ -109,6 +113,11 @@ onMounted(async () => {
         <option v-for="m in summary?.manufacturers ?? []" :key="m.name" :value="m.name">
           {{ m.name }} ({{ m.owned }}/{{ m.total }})
         </option>
+      </select>
+      <select v-model="filters.category" class="select" aria-label="Catégorie">
+        <option value="">Route et course</option>
+        <option value="road">Voitures de route</option>
+        <option value="racing">Voitures de course 🏁</option>
       </select>
       <select v-model="filters.owned" class="select" aria-label="Possession">
         <option value="all">Toutes les cartes</option>
@@ -227,7 +236,7 @@ onMounted(async () => {
 
 .filters {
   display: grid;
-  grid-template-columns: 2fr 1.4fr 1fr 1fr;
+  grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr;
   gap: 10px;
   padding: 12px;
   margin-bottom: 24px;

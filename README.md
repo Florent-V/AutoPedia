@@ -37,8 +37,16 @@ docker compose up -d --build
 
 Ouvrir ensuite http://localhost:3000.
 
-Au premier démarrage, l'API lance automatiquement l'import du catalogue depuis Wikidata en arrière-plan.
-Avec la limite par défaut (3 000 modèles), cela prend quelques minutes. Si Wikidata est injoignable, un **jeu de secours** d'environ 115 voitures emblématiques est chargé à la place, pour que le jeu reste jouable.
+Au premier démarrage, l'API importe automatiquement le catalogue en arrière-plan, en deux temps :
+
+1. **Les données** des voitures depuis Wikidata. Le jeu est jouable dès que cette étape est finie.
+2. **Les photos et les résumés** depuis Wikimedia Commons et Wikipédia, téléchargés et stockés chez toi. Pour 3 000 voitures, compte de quelques dizaines de minutes à quelques heures selon la tolérance des serveurs Wikimedia. En attendant, les cartes affichent l'image distante ou le dessin technique.
+
+Pense à renseigner `WIKI_CONTACT` dans `.env` (une URL ou une adresse e-mail) : Wikimedia demande de pouvoir identifier les programmes qui l'interrogent.
+
+Si Wikidata est injoignable, un **jeu de secours** d'environ 115 voitures emblématiques est chargé à la place, pour que le jeu reste jouable.
+
+Pour suivre l'avancement : `docker compose logs -f api`, ou `docker compose exec api node dist/cli/import-catalog stats`.
 
 ## Développement local
 
@@ -59,10 +67,12 @@ npm run dev                              # http://localhost:3000 (proxy /api →
 Commandes utiles côté API :
 
 ```bash
-npm test                                  # tests unitaires (régénération, raretés)
-npm run build && npm run catalog:import   # import Wikidata (avec repli sur le jeu de secours)
+npm test                                  # tests unitaires
+npm run build && npm run catalog:import   # import Wikidata + photos + résumés (repli sur le jeu de secours)
 node dist/cli/import-catalog seed         # forcer le jeu de secours
 node dist/cli/import-catalog wikidata 5000
+node dist/cli/import-catalog media        # reprendre seulement les photos et résumés manquants
+node dist/cli/import-catalog stats        # état : cartes, photos locales, photos en attente, résumés
 ```
 
 ## Règles du jeu
@@ -96,7 +106,7 @@ Ils sont définis de façon déclarative dans `apps/api/src/achievements/achieve
 ## Application mobile (PWA)
 
 - **Installation :** sur Android et sur ordinateur (Chrome, Edge), un bouton « Installer » apparaît sur la page Boosters et dans le Profil. Sur iPhone, il faut passer par Safari : **Partager** puis **Sur l'écran d'accueil**. Le jeu s'ouvre alors en plein écran, comme une application.
-- **Hors-ligne :** un service worker (`apps/web/public/sw.js`) met en cache l'interface. L'API n'est jamais mise en cache, pour que l'état du jeu reste toujours à jour.
+- **Hors-ligne :** un service worker (`apps/web/public/sw.js`) met en cache l'interface et les photos déjà vues (600 au maximum). Le reste de l'API n'est jamais mis en cache, pour que l'état du jeu reste toujours à jour.
 - **Notifications :** quand la réserve d'un joueur abonné atteint son maximum, l'API lui envoie **une seule** notification Web Push, puis attend qu'il ouvre un booster avant de pouvoir le prévenir à nouveau. Le joueur les active dans **Profil > Application**. Sur iPhone, les notifications ne marchent que si l'application est installée (iOS 16.4 ou plus).
   - Générer les clés avec `npx web-push generate-vapid-keys`, puis renseigner `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT` dans `.env`. Sans ces clés, les notifications sont simplement désactivées.
   - Le serveur vérifie les réserves toutes les 60 secondes (`PUSH_CHECK_SECONDS`).
@@ -105,11 +115,19 @@ Ils sont définis de façon déclarative dans `apps/api/src/achievements/achieve
 
 ## Source des données
 
-- **Wikidata** (licence CC0) : on récupère les instances de « modèle d'automobile » (`Q3231690`) et de ses sous-classes qui ont une image, avec le constructeur, le pays, les années, la puissance, la vitesse maximale, la masse et les titres Wikipédia fr/en. L'import se fait en deux étapes : une liste triée par notoriété, puis les détails par lots de 80. Voir `apps/api/src/catalog/wikidata.ts`.
-- **Wikipédia REST API** : le résumé de l'article (et l'image, si elle manque) est récupéré au premier affichage d'une carte, puis mis en cache 30 jours en base.
-- **Images** : elles sont servies par Wikimedia Commons (`Special:FilePath?width=640`). Avant une mise en ligne publique, il faudra afficher les crédits et licences des images (CC BY-SA, etc.).
+Tout est rapatrié chez toi : les données et les résumés en base PostgreSQL, les photos dans un dossier local (le volume Docker `media`).
 
-Pour relancer l'import en production : `POST /api/admin/catalog/import` avec l'en-tête `x-admin-token: $ADMIN_TOKEN` et le corps `{"source":"wikidata","limit":3000}`.
+- **Wikidata** (licence CC0) fournit la liste des voitures, avec la marque (à défaut, le constructeur), le pays, les années de production, la puissance, la vitesse maximale, la masse, la longueur, la photo de référence et les titres Wikipédia fr/en. Ces caractéristiques sont inégalement renseignées dans Wikidata : chaque carte affiche les trois premières disponibles. On prend deux familles :
+  - les **voitures de série**, classées « modèle d'automobile » (`Q3231690`) ;
+  - les **voitures de course** (F1, endurance, rallye…), classées « modèle d'automobile de course » (`Q90834785`). Ce n'est pas une sous-classe de la précédente dans Wikidata. Elles portent un drapeau 🏁 et ont leurs propres succès.
+
+  L'import récupère d'abord la liste de chaque famille (requête légère, triée côté application par notoriété), puis les détails par lots de 50. Voir `apps/api/src/catalog/wikidata.ts`.
+- **Photos** (Wikimedia Commons) : l'API Commons, interrogée par lots de 50, donne pour chaque photo une miniature, l'**auteur** et la **licence**. La miniature est convertie en WebP de 640 px de large (environ 50 à 80 Ko), stockée dans `MEDIA_DIR`, puis servie par l'API sous `/api/media/…` avec un cache long. L'application la garde aussi hors-ligne. Les crédits (auteur, licence, lien vers la source) s'affichent dans la fiche de chaque carte, comme l'exigent les licences CC BY-SA.
+- **Résumés** (Wikipédia) : l'introduction de l'article est récupérée par lots de 20 pendant l'import et stockée en base.
+- **Politesse et reprise** : un User-Agent avec contact, un espacement minimal entre les requêtes vers un même domaine, et le respect des en-têtes `Retry-After` en cas de limitation (429). Un blocage temporaire interrompt proprement le rapatriement, qui reprend au démarrage suivant, toutes les 6 heures (`MEDIA_SYNC_HOURS`), ou avec `import-catalog media`. Une photo introuvable n'est retentée qu'au bout de 7 jours. Le jeton facultatif `WIKIMEDIA_TOKEN` peut relever les limites de débit.
+- **Repli** : tant qu'une photo n'est pas téléchargée, la carte affiche l'image distante (`MEDIA_REMOTE_FALLBACK=true`) ou, à défaut, le dessin technique.
+
+Pour relancer l'import en production : `POST /api/admin/catalog/import` avec l'en-tête `x-admin-token: $ADMIN_TOKEN` et le corps `{"source":"wikidata","limit":3000}`. Avec `{"source":"media"}`, seuls les photos et résumés manquants sont repris. `GET /api/admin/catalog/status`, avec le même en-tête, donne l'état du catalogue.
 
 ## API
 

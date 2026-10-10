@@ -9,7 +9,10 @@ export class HealthController {
   @Public()
   @Get()
   async health() {
-    const cards = await this.prisma.car.count({ where: { active: true } });
-    return { status: 'ok', cards };
+    const [cards, images] = await Promise.all([
+      this.prisma.car.count({ where: { active: true } }),
+      this.prisma.car.count({ where: { active: true, imagePath: { not: null } } }),
+    ]);
+    return { status: 'ok', cards, images };
   }
 }

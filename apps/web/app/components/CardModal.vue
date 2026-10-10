@@ -47,9 +47,11 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
             <div v-if="card.manufacturer"><dt>Constructeur</dt><dd>{{ card.manufacturer }}</dd></div>
             <div v-if="card.country"><dt>Pays</dt><dd>{{ card.country }}</dd></div>
             <div v-if="card.yearStart"><dt>Production</dt><dd>{{ formatYears(card) }}</dd></div>
+            <div><dt>Catégorie</dt><dd>{{ card.racing ? 'Course 🏁' : 'Route' }}</dd></div>
             <div v-if="card.powerHp"><dt>Puissance</dt><dd>{{ formatNumber(card.powerHp) }} ch</dd></div>
             <div v-if="card.topSpeedKmh"><dt>Vitesse max.</dt><dd>{{ formatNumber(card.topSpeedKmh) }} km/h</dd></div>
             <div v-if="card.massKg"><dt>Masse</dt><dd>{{ formatNumber(card.massKg) }} kg</dd></div>
+            <div v-if="card.lengthMm"><dt>Longueur</dt><dd>{{ (card.lengthMm / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) }} m</dd></div>
             <div><dt>Exemplaires</dt><dd>{{ card.quantity ?? 0 }}</dd></div>
           </dl>
           <template v-if="owned">
@@ -60,6 +62,16 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
             </a>
           </template>
           <p v-else class="muted">Ouvrez des boosters pour obtenir cette carte et découvrir son histoire.</p>
+          <p v-if="owned && card.imageCredit" class="credit">
+            Photo :
+            <a :href="card.imageCredit.sourceUrl" target="_blank" rel="noopener">{{ card.imageCredit.author || 'auteur inconnu' }}</a>
+            <template v-if="card.imageCredit.license">
+              ·
+              <a v-if="card.imageCredit.licenseUrl" :href="card.imageCredit.licenseUrl" target="_blank" rel="noopener license">{{ card.imageCredit.license }}</a>
+              <span v-else>{{ card.imageCredit.license }}</span>
+            </template>
+            · Wikimedia Commons
+          </p>
         </div>
       </div>
     </div>
@@ -141,6 +153,16 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
 .facts dd {
   margin: 2px 0 0;
   font-weight: 600;
+}
+
+.credit {
+  margin-top: 16px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.credit a {
+  color: inherit;
 }
 
 .summary {

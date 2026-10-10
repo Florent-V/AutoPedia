@@ -1,5 +1,7 @@
 /* Service worker de Garage : application hors-ligne (coquille) + notifications push. */
-const VERSION = 'garage-v1';
+const VERSION = 'garage-v2';
+const MEDIA_CACHE = 'garage-media-v1';
+const MEDIA_MAX_ENTRIES = 600;
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -10,7 +12,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== MEDIA_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -20,7 +22,26 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // L'API n'est jamais mise en cache (état de jeu toujours frais).
+  // Photos des cartes : fichiers versionnés, servis depuis le cache (disponibles hors-ligne).
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/media/')) {
+    event.respondWith(
+      caches.open(MEDIA_CACHE).then((cache) =>
+        cache.match(req).then(
+          (hit) =>
+            hit ||
+            fetch(req).then((res) => {
+              if (res.ok) {
+                cache.put(req, res.clone()).then(() => trimCache(cache));
+              }
+              return res;
+            }),
+        ),
+      ),
+    );
+    return;
+  }
+
+  // Le reste de l'API n'est jamais mis en cache (état de jeu toujours frais).
   if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
 
   // Navigation : réseau d'abord, coquille en cache si hors-ligne (application monopage).
@@ -58,6 +79,11 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+async function trimCache(cache) {
+  const keys = await cache.keys();
+  for (let i = 0; i < keys.length - MEDIA_MAX_ENTRIES; i++) await cache.delete(keys[i]);
+}
 
 self.addEventListener('push', (event) => {
   let data = {};

@@ -30,7 +30,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   def('boosters-10', 'Boosters', 'Mise en route', 'Ouvrir 10 boosters', '🔑', 'bronze', 'boostersOpened', 10),
   def('boosters-50', 'Boosters', 'Rodage terminé', 'Ouvrir 50 boosters', '⚙️', 'silver', 'boostersOpened', 50),
   def('boosters-200', 'Boosters', 'Grand tourisme', 'Ouvrir 200 boosters', '🛣️', 'gold', 'boostersOpened', 200),
-  def('boosters-1000', 'Boosters', 'Million de kilomètres', 'Ouvrir 1 000 boosters', '🏁', 'platinum', 'boostersOpened', 1000),
+  def('boosters-1000', 'Boosters', 'Million de kilomètres', 'Ouvrir 1 000 boosters', '🛞', 'platinum', 'boostersOpened', 1000),
 
   def('unique-10', 'Collection', 'Petit garage', 'Posséder 10 cartes différentes', '🏠', 'bronze', 'uniqueCards', 10),
   def('unique-50', 'Collection', 'Concession', 'Posséder 50 cartes différentes', '🏪', 'bronze', 'uniqueCards', 50),
@@ -49,6 +49,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   def('brand-15', 'Exploration', 'Spécialiste', 'Posséder 15 cartes d’un même constructeur', '🛠️', 'silver', 'maxPerBrand', 15),
   def('countries-5', 'Exploration', 'Tour d’Europe', 'Posséder des voitures de 5 pays différents', '🗺️', 'bronze', 'countries', 5),
   def('countries-12', 'Exploration', 'Tour du monde', 'Posséder des voitures de 12 pays différents', '🌍', 'silver', 'countries', 12),
+  def('racing-5', 'Exploration', 'Paddock', 'Posséder 5 voitures de course', '🏁', 'silver', 'racing', 5),
+  def('racing-20', 'Exploration', 'Écurie officielle', 'Posséder 20 voitures de course', '🏎️', 'gold', 'racing', 20),
   def('decades-6', 'Exploration', 'Voyage dans le temps', 'Posséder des voitures de 6 décennies différentes', '⏳', 'silver', 'decades', 6),
 
   def('points-100', 'Score', 'Plein d’essence', 'Atteindre 100 points de collection', '⛽', 'bronze', 'points', 100),

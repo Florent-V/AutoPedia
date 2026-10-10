@@ -16,6 +16,9 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/dist ./dist
+# Dossier des photos (monté sur un volume) appartenant à l'utilisateur non-root
+RUN mkdir -p /data/media && chown -R node:node /data/media
+ENV MEDIA_DIR=/data/media
 USER node
 EXPOSE 3001
 # Applique les migrations puis démarre l'API

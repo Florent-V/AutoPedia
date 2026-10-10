@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { assignRarities } from '../game/rarity';
-import { fetchWikiSummary } from './http';
+import { MediaService } from './media.service';
 import { SEED_CARS } from './seed-cars';
 import { fetchWikidataCars, WikidataCar } from './wikidata';
 
@@ -21,13 +21,20 @@ export class CatalogService implements OnApplicationBootstrap {
   private readonly logger = new Logger(CatalogService.name);
   private running: Promise<unknown> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly media: MediaService,
+  ) {}
 
   onApplicationBootstrap() {
     const mode = (process.env.CATALOG_AUTO_IMPORT ?? 'wikidata').toLowerCase();
     if (mode === 'off' || process.env.NODE_ENV === 'test') return;
     void this.prisma.car.count().then((count) => {
-      if (count > 0) return;
+      if (count > 0) {
+        // Reprend un rapatriement de photos/résumés éventuellement interrompu.
+        void this.media.syncAll();
+        return;
+      }
       this.logger.log('Catalogue vide : import automatique en arrière-plan…');
       void this.import(mode === 'seed' ? 'seed' : 'wikidata').catch((err) =>
         this.logger.error(`Import automatique échoué : ${(err as Error).message}`),
@@ -40,20 +47,28 @@ export class CatalogService implements OnApplicationBootstrap {
     if (this.running) return this.running;
     this.running = (async () => {
       try {
-        if (source === 'wikidata') {
-          try {
-            return await this.importWikidata(limit);
-          } catch (err) {
-            this.logger.warn(`Wikidata injoignable (${(err as Error).message}) : utilisation du jeu de secours`);
-            if ((await this.prisma.car.count()) > 0) throw err;
-          }
-        }
-        return await this.importSeed();
+        const result = await this.importData(source, limit);
+        // Les photos et résumés sont rapatriés ensuite : le jeu est déjà jouable pendant ce temps.
+        await this.media.syncAll();
+        this.logger.log(`Médias : ${JSON.stringify(await this.media.stats())}`);
+        return result;
       } finally {
         this.running = null;
       }
     })();
     return this.running;
+  }
+
+  private async importData(source: ImportSource, limit: number) {
+    if (source === 'wikidata') {
+      try {
+        return await this.importWikidata(limit);
+      } catch (err) {
+        this.logger.warn(`Wikidata injoignable (${(err as Error).message}) : utilisation du jeu de secours`);
+        if ((await this.prisma.car.count()) > 0) throw err;
+      }
+    }
+    return this.importSeed();
   }
 
   async importWikidata(limit: number) {
@@ -74,13 +89,18 @@ export class CatalogService implements OnApplicationBootstrap {
     // (on conserve leur identifiant, donc les collections des joueurs).
     const seeds = await this.prisma.car.findMany({
       where: { externalId: { startsWith: 'seed:' } },
-      select: { id: true, wikiTitle: true },
+      select: { id: true, wikiTitle: true, imageFile: true },
     });
-    const seedByTitle = new Map(seeds.filter((s) => s.wikiTitle).map((s) => [s.wikiTitle!, s.id]));
+    const seedByTitle = new Map(seeds.filter((s) => s.wikiTitle).map((s) => [s.wikiTitle!, s]));
 
     let count = 0;
     for (let i = 0; i < cars.length; i += 100) {
       const chunk = cars.slice(i, i + 100);
+      const existing = await this.prisma.car.findMany({
+        where: { externalId: { in: chunk.map((c) => c.qid) } },
+        select: { externalId: true, imageFile: true },
+      });
+      const previousFile = new Map(existing.map((e) => [e.externalId, e.imageFile]));
       await this.prisma.$transaction(
         chunk.map((c) => {
           const data = {
@@ -90,23 +110,33 @@ export class CatalogService implements OnApplicationBootstrap {
             yearStart: c.yearStart,
             yearEnd: c.yearEnd,
             imageUrl: c.imageUrl,
+            imageFile: c.imageFile,
+            racing: c.racing,
             wikiTitle: c.wikiTitle,
             wikiLang: c.wikiLang,
             powerKw: c.powerKw,
             topSpeedKmh: c.topSpeedKmh,
             massKg: c.massKg,
+            lengthMm: c.lengthMm,
             popularity: c.popularity,
             active: true,
           } satisfies Prisma.CarUpdateInput;
-          const seedId = c.wikiLang === 'fr' && c.wikiTitle ? seedByTitle.get(c.wikiTitle) : undefined;
-          if (seedId !== undefined) {
+          // Photo de référence changée : la copie locale et ses crédits sont à refaire.
+          const resetIf = (changed: boolean) =>
+            changed ? { imagePath: null, imageAuthor: null, imageLicense: null, imageLicenseUrl: null, imageCheckedAt: null } : {};
+          const seed = c.wikiLang === 'fr' && c.wikiTitle ? seedByTitle.get(c.wikiTitle) : undefined;
+          if (seed) {
             seedByTitle.delete(c.wikiTitle!);
-            return this.prisma.car.update({ where: { id: seedId }, data: { ...data, externalId: c.qid } });
+            return this.prisma.car.update({
+              where: { id: seed.id },
+              data: { ...data, externalId: c.qid, ...resetIf(seed.imageFile !== c.imageFile) },
+            });
           }
+          const reset = resetIf(previousFile.has(c.qid) && previousFile.get(c.qid) !== c.imageFile);
           return this.prisma.car.upsert({
             where: { externalId: c.qid },
             create: { externalId: c.qid, ...data },
-            update: data,
+            update: { ...data, ...reset },
           });
         }),
       );
@@ -123,34 +153,7 @@ export class CatalogService implements OnApplicationBootstrap {
       await this.prisma.car.upsert({ where: { externalId }, create: { externalId, ...data }, update: data });
     }
     await this.recomputeRarities();
-    await this.enrichImages().catch(() => undefined);
     return { source: 'seed' as const, cards: SEED_CARS.length };
-  }
-
-  /** Complète les images manquantes à partir des résumés Wikipédia (si le réseau le permet). */
-  async enrichImages(max = 500) {
-    const cars = await this.prisma.car.findMany({
-      where: { imageUrl: null, wikiTitle: { not: null }, summaryFetchedAt: null },
-      take: max,
-    });
-    let ok = 0;
-    for (const car of cars) {
-      try {
-        const s = await fetchWikiSummary(car.wikiLang ?? 'fr', car.wikiTitle!);
-        await this.prisma.car.update({
-          where: { id: car.id },
-          data: {
-            imageUrl: s.originalimage?.source ?? s.thumbnail?.source ?? null,
-            summary: s.extract ?? null,
-            summaryFetchedAt: new Date(),
-          },
-        });
-        ok++;
-      } catch {
-        if (ok === 0) break; // réseau indisponible : inutile d'insister
-      }
-    }
-    if (ok) this.logger.log(`Images complétées depuis Wikipédia : ${ok}`);
   }
 
   /** Recalcule la rareté de toutes les cartes à partir de leur notoriété. */

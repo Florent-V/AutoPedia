@@ -12,6 +12,9 @@ export class CollectionQuery {
   @IsOptional() @IsString() @MaxLength(100)
   manufacturer?: string;
 
+  @IsOptional() @IsIn(['racing', 'road'])
+  category?: 'racing' | 'road';
+
   @IsOptional() @IsIn(['all', 'owned', 'missing'])
   owned: 'all' | 'owned' | 'missing' = 'all';
 

@@ -101,7 +101,17 @@ model Car {
   country          String?
   yearStart        Int?
   yearEnd          Int?
+  /// URL distante de l'image (repli si la copie locale n'existe pas encore).
   imageUrl         String?
+  /// Nom du fichier sur Wikimedia Commons (ex. « Ferrari F40.jpg »).
+  imageFile        String?
+  /// Chemin de la copie locale, relatif à MEDIA_DIR (ex. « cars/Q172146-1a2b3c4d.webp »).
+  imagePath        String?
+  imageAuthor      String?
+  imageLicense     String?
+  imageLicenseUrl  String?
+  /// Dernière tentative de téléchargement (évite de réessayer en boucle les échecs).
+  imageCheckedAt   DateTime?
   /// Titre de l'article Wikipédia (fr si disponible, sinon en).
   wikiTitle        String?
   wikiLang         String?
@@ -111,6 +121,9 @@ model Car {
   powerKw          Float?
   topSpeedKmh      Float?
   massKg           Float?
+  lengthMm        Int?
+  /// Voiture de compétition (F1, endurance, rallye…).
+  racing           Boolean   @default(false)
   /// Indicateur de notoriété (nombre d'articles Wikipédia liés) : sert à calculer la rareté.
   popularity       Int       @default(0)
   rarity           Rarity    @default(COMMON)
@@ -124,6 +137,7 @@ model Car {
 
   @@index([rarity, active])
   @@index([manufacturer])
+  @@index([imagePath])
   @@map("car")
 }
 

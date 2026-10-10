@@ -15,11 +15,12 @@ const stats = computed(() => {
     { label: 'Points de collection', value: s.points, icon: '⭐' },
     { label: 'Cartes différentes', value: s.uniqueCards, icon: '🎴' },
     { label: 'Cartes obtenues', value: s.cardsObtained, icon: '📦' },
-    { label: 'Boosters ouverts', value: s.boostersOpened, icon: '🎁' },
     { label: 'Légendaires', value: s.legendary, icon: '👑' },
     { label: 'Épiques', value: s.epic, icon: '🔮' },
+    { label: 'Voitures de course', value: s.racing ?? 0, icon: '🏁' },
     { label: 'Pays représentés', value: s.countries, icon: '🌍' },
     { label: 'Décennies couvertes', value: s.decades, icon: '⏳' },
+    { label: 'Boosters ouverts', value: s.boostersOpened, icon: '🎁' },
   ];
 });
 </script>

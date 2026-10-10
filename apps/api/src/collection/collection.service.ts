@@ -24,6 +24,7 @@ export class CollectionService {
       and.push({ OR: [{ rarityOverride: q.rarity }, { rarityOverride: null, rarity: q.rarity }] });
     }
     if (q.manufacturer) and.push({ manufacturer: q.manufacturer });
+    if (q.category) and.push({ racing: q.category === 'racing' });
     if (q.owned === 'owned') and.push({ owners: { some: { userId } } });
     if (q.owned === 'missing') and.push({ owners: { none: { userId } } });
     if (and.length) where.AND = and;

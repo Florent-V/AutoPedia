@@ -13,6 +13,7 @@ export interface PlayerStats {
   rare: number;
   epic: number;
   legendary: number;
+  racing: number;
   maxPerBrand: number;
   countries: number;
   decades: number;
@@ -39,6 +40,7 @@ export async function computePlayerStats(db: Db, userId: string): Promise<Player
       COUNT(*) FILTER (WHERE ${effectiveRarity} = 'RARE')         AS "rare",
       COUNT(*) FILTER (WHERE ${effectiveRarity} = 'EPIC')         AS "epic",
       COUNT(*) FILTER (WHERE ${effectiveRarity} = 'LEGENDARY')    AS "legendary",
+      COUNT(*) FILTER (WHERE c."racing")                          AS "racing",
       COUNT(DISTINCT c."country")                                 AS "countries",
       COUNT(DISTINCT (c."yearStart" / 10))                        AS "decades",
       COALESCE(MAX(uc."quantity"), 0)                             AS "maxQuantity"
@@ -67,6 +69,7 @@ export async function computePlayerStats(db: Db, userId: string): Promise<Player
     rare: num(row?.rare),
     epic: num(row?.epic),
     legendary: num(row?.legendary),
+    racing: num(row?.racing),
     maxPerBrand: num(brand?.n),
     countries: num(row?.countries),
     decades: num(row?.decades),
