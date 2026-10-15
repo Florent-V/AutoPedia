@@ -11,7 +11,8 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Accessible uniquement depuis la machine hôte (développement local), jamais depuis le réseau
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U garage -d garage"]
       interval: 5s
@@ -43,6 +44,14 @@ services:
       WIKIMEDIA_TOKEN: ${WIKIMEDIA_TOKEN:-}
       MEDIA_DIR: /data/media
       MEDIA_REMOTE_FALLBACK: ${MEDIA_REMOTE_FALLBACK:-true}
+      GAME_TIMEZONE: ${GAME_TIMEZONE:-Europe/Paris}
+      STARTING_CREDITS: ${STARTING_CREDITS:-100}
+      GAMES_PER_DAY: ${GAMES_PER_DAY:-3}
+      TRADE_DAYS: ${TRADE_DAYS:-7}
+      MAX_OPEN_TRADES: ${MAX_OPEN_TRADES:-10}
+      PITY_EPIC: ${PITY_EPIC:-10}
+      PITY_LEGENDARY: ${PITY_LEGENDARY:-60}
+      SHOP_SECRET: ${SHOP_SECRET:-}
     volumes:
       - media:/data/media
 
