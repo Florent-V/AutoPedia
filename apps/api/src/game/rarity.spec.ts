@@ -1,4 +1,4 @@
-import { assignRarities, rollBoosterRarities, rollRarity } from './rarity';
+import { assignRarities, pityFor, rollBoosterRarities, rollRarity } from './rarity';
 
 describe('rarity', () => {
   it('assigns rarities by popularity rank', () => {
@@ -21,6 +21,20 @@ describe('rarity', () => {
 
   it('never rolls a common card in the featured slot', () => {
     for (let i = 0; i < 1000; i++) expect(rollRarity(true)).not.toBe('COMMON');
+  });
+
+  it('applies the epic pity when the roll has none', () => {
+    const slots = rollBoosterRarities(5, () => 0.5, { epic: true });
+    expect(['EPIC', 'LEGENDARY']).toContain(slots[4]);
+  });
+
+  it('applies the legendary pity', () => {
+    expect(rollBoosterRarities(5, () => 0, { legendary: true, epic: true })[4]).toBe('LEGENDARY');
+  });
+
+  it('triggers pity on the Nth booster', () => {
+    expect(pityFor(8, 0, 10, 60).epic).toBe(false);
+    expect(pityFor(9, 59, 10, 60)).toEqual({ epic: true, legendary: true });
   });
 
   it('rolls the expected number of slots', () => {

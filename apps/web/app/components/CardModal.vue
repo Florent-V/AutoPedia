@@ -57,9 +57,12 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
           <template v-if="owned">
             <p v-if="card.summary" class="summary">{{ card.summary }}</p>
             <p v-else class="muted">Pas de résumé disponible pour le moment.</p>
-            <a v-if="card.wikiUrl" :href="card.wikiUrl" target="_blank" rel="noopener" class="btn">
-              Lire l’article Wikipédia ↗
-            </a>
+            <div class="modal__actions">
+              <a v-if="card.wikiUrl" :href="card.wikiUrl" target="_blank" rel="noopener" class="btn">Lire l’article Wikipédia ↗</a>
+              <NuxtLink :to="{ path: '/market', query: { tab: 'trades', sell: card.id } }" class="btn" @click="emit('close')">
+                🤝 Proposer à l’échange
+              </NuxtLink>
+            </div>
           </template>
           <p v-else class="muted">Ouvrez des boosters pour obtenir cette carte et découvrir son histoire.</p>
           <p v-if="owned && card.imageCredit" class="credit">
@@ -153,6 +156,12 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
 .facts dd {
   margin: 2px 0 0;
   font-weight: 600;
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .credit {

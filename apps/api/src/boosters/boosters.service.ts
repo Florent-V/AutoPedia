@@ -1,13 +1,14 @@
 import { ConflictException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { Car, Prisma, Rarity } from '@prisma/client';
-import { gameConfig } from '../config';
+import { economyConfig, gameConfig } from '../config';
 import { consumeBooster } from '../game/booster-clock';
-import { RARITIES, rarityRank, rollBoosterRarities } from '../game/rarity';
+import { Pity, pityFor, RARITIES, rarityRank, rollBoosterRarities } from '../game/rarity';
+import { addCard } from '../economy/wallet';
 import { PrismaService } from '../prisma/prisma.service';
 import { boosterView, PlayerService } from '../player/player.service';
 import { computePlayerStats } from '../player/player-stats';
 import { AchievementsService } from '../achievements/achievements.service';
-import { toCardDto } from '../cars/card.dto';
+import { effectiveRarity, toCardDto } from '../cars/card.dto';
 
 @Injectable()
 export class BoostersService {
@@ -38,8 +39,12 @@ export class BoostersService {
         });
       }
 
-      const cars = await this.drawCards(tx, gameConfig.cardsPerBooster);
+      const pity = pityFor(player.sinceEpic, player.sinceLegendary, economyConfig.pityEpic, economyConfig.pityLegendary);
+      const cars = await this.drawCards(tx, gameConfig.cardsPerBooster, pity);
       const after = consumeBooster(status, now);
+      const rarities = cars.map((c) => effectiveRarity(c));
+      const gotLegendary = rarities.includes('LEGENDARY');
+      const gotEpic = gotLegendary || rarities.includes('EPIC');
 
       await tx.player.update({
         where: { userId },
@@ -48,23 +53,15 @@ export class BoostersService {
           boosterAnchor: after.anchor,
           boostersOpened: { increment: 1 },
           cardsObtained: { increment: cars.length },
+          sinceEpic: gotEpic ? 0 : { increment: 1 },
+          sinceLegendary: gotLegendary ? 0 : { increment: 1 },
         },
       });
 
-      const owned = await tx.userCard.findMany({
-        where: { userId, carId: { in: cars.map((c) => c.id) } },
-        select: { carId: true },
-      });
-      const alreadyOwned = new Set(owned.map((o) => o.carId));
-
       const cards = [];
       for (const car of cars) {
-        const userCard = await tx.userCard.upsert({
-          where: { userId_carId: { userId, carId: car.id } },
-          create: { userId, carId: car.id, quantity: 1, firstObtainedAt: now, lastObtainedAt: now },
-          update: { quantity: { increment: 1 }, lastObtainedAt: now },
-        });
-        cards.push({ ...toCardDto(car), isNew: !alreadyOwned.has(car.id), quantity: userCard.quantity });
+        const { quantity, isNew } = await addCard(tx, userId, car.id, now);
+        cards.push({ ...toCardDto(car), isNew, quantity });
       }
 
       await tx.boosterOpening.create({ data: { userId, carIds: cars.map((c) => c.id) } });
@@ -72,13 +69,19 @@ export class BoostersService {
       const stats = await computePlayerStats(tx, userId);
       const newAchievements = await this.achievements.evaluate(tx, userId, stats);
 
-      return { cards, boosters: boosterView(after, now), stats, newAchievements };
+      return {
+        cards,
+        boosters: boosterView(after, now),
+        stats,
+        newAchievements,
+        pity: { epic: !!pity.epic, legendary: !!pity.legendary },
+      };
     }, { timeout: 15_000 });
   }
 
   /** Tire les cartes d'un booster, sans doublon au sein d'un même booster. */
-  private async drawCards(tx: Prisma.TransactionClient, count: number): Promise<Car[]> {
-    const slots = rollBoosterRarities(count);
+  private async drawCards(tx: Prisma.TransactionClient, count: number, pity: Pity = {}): Promise<Car[]> {
+    const slots = rollBoosterRarities(count, Math.random, pity);
     const picked: Car[] = [];
     for (const wanted of slots) {
       const car = await this.pickCar(tx, wanted, picked.map((c) => c.id));
@@ -93,7 +96,7 @@ export class BoostersService {
   }
 
   /** Choisit une voiture aléatoire de la rareté demandée, en se rabattant sur la plus proche si besoin. */
-  private async pickCar(tx: Prisma.TransactionClient, wanted: Rarity, exclude: number[]): Promise<Car | null> {
+  async pickCar(tx: Prisma.TransactionClient, wanted: Rarity, exclude: number[]): Promise<Car | null> {
     const order = [...RARITIES].sort(
       (a, b) => Math.abs(rarityRank(a) - rarityRank(wanted)) - Math.abs(rarityRank(b) - rarityRank(wanted)),
     );

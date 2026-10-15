@@ -48,6 +48,11 @@ export interface Stats {
   maxQuantity: number;
   catalogSize?: number;
   achievements?: number;
+  credits?: number;
+  creditsEarned?: number;
+  gamesPlayed?: number;
+  tradesCompleted?: number;
+  shopPurchases?: number;
 }
 
 export interface Me {
@@ -55,6 +60,7 @@ export interface Me {
   boosters: BoosterView;
   stats: Stats;
   game: { cardsPerBooster: number };
+  pity?: { epicIn: number; legendaryIn: number };
 }
 
 export interface Achievement {
@@ -74,6 +80,23 @@ export interface OpenResult {
   boosters: BoosterView;
   stats: Stats;
   newAchievements: Achievement[];
+  pity?: { epic: boolean; legendary: boolean };
+}
+
+export function notifyAchievements(list: Achievement[] | undefined, delay = 0) {
+  if (!list?.length) return;
+  const { push } = useToasts();
+  setTimeout(() => {
+    for (const a of list) push({ title: `Succès débloqué : ${a.name}`, message: a.description, icon: a.icon, tier: a.tier }, 7000);
+  }, delay);
+}
+
+/** Met à jour le solde affiché dans l'en-tête. */
+export function setCredits(balance: number | undefined) {
+  const player = usePlayerState();
+  if (player.value && typeof balance === 'number') {
+    player.value = { ...player.value, stats: { ...player.value.stats, credits: balance } };
+  }
 }
 
 export const RARITY_META: Record<Rarity, { label: string; short: string; points: number; holo: boolean }> = {

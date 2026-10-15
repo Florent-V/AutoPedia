@@ -5,6 +5,8 @@ const player = usePlayerState();
 const links = [
   { to: '/boosters', label: 'Boosters' },
   { to: '/collection', label: 'Collection' },
+  { to: '/games', label: 'Jeux' },
+  { to: '/market', label: 'Marché' },
   { to: '/achievements', label: 'Succès' },
   { to: '/profile', label: 'Profil' },
 ];
@@ -21,6 +23,7 @@ const links = [
         </nav>
         <div class="header__right">
           <BoosterCounter />
+          <NuxtLink v-if="player" to="/market" class="chip credits" title="Crédits">🪙 {{ formatNumber(player.stats.credits ?? 0) }}</NuxtLink>
           <span v-if="player" class="chip points" title="Points de collection">⭐ {{ formatNumber(player.stats.points) }}</span>
         </div>
       </template>
@@ -74,6 +77,17 @@ const links = [
   background: var(--surface-2);
 }
 
+.credits {
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+  .points {
+    display: none;
+  }
+}
+
 .header__right {
   margin-left: auto;
   display: flex;
@@ -92,7 +106,7 @@ const links = [
     gap: 10px;
   }
   .counter .muted {
-    font-size: 0.75rem;
+    display: none;
   }
   .brand {
     font-size: 1.25rem;

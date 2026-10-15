@@ -17,6 +17,13 @@ import { PlayerService } from './player/player.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { PushController } from './push/push.controller';
 import { PushService } from './push/push.service';
+import { GamesController } from './games/games.controller';
+import { GamesService } from './games/games.service';
+import { ShopController } from './shop/shop.controller';
+import { ShopService } from './shop/shop.service';
+import { TradesController } from './trades/trades.controller';
+import { TradesService } from './trades/trades.service';
+import { WalletController } from './economy/wallet.controller';
 
 @Module({
   imports: [PrismaModule, AuthModule],
@@ -29,7 +36,11 @@ import { PushService } from './push/push.service';
     AchievementsController,
     CatalogController,
     PushController,
+    GamesController,
+    ShopController,
+    TradesController,
+    WalletController,
   ],
-  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, MediaService, PushService],
+  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, MediaService, PushService, GamesService, ShopService, TradesService],
 })
 export class AppModule {}

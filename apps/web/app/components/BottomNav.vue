@@ -4,7 +4,8 @@ const player = usePlayerState();
 const tabs = [
   { to: '/boosters', label: 'Boosters', icon: 'M4 8h16v12H4z M8 8V5h8v3 M4 12h16' },
   { to: '/collection', label: 'Collection', icon: 'M5 4h10v14H5z M9 7h10v14H9' },
-  { to: '/achievements', label: 'Succès', icon: 'M8 4h8v5a4 4 0 0 1-8 0z M12 13v4 M8 20h8 M8 6H5v2a3 3 0 0 0 3 3 M16 6h3v2a3 3 0 0 1-3 3' },
+  { to: '/games', label: 'Jeux', icon: 'M6 9h12a3 3 0 0 1 3 3v3a2 2 0 0 1-3.5 1.3L15 14H9l-2.5 2.3A2 2 0 0 1 3 15v-3a3 3 0 0 1 3-3z M8 11v2 M7 12h2 M15.5 12h.01 M17.5 12h.01' },
+  { to: '/market', label: 'Marché', icon: 'M4 9l1.5-5h13L20 9 M4 9h16v2a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1-5 0z M5 13v7h14v-7 M10 20v-4h4v4' },
   { to: '/profile', label: 'Profil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c1-4 4-6 8-6s7 2 8 6' },
 ];
 </script>
@@ -36,7 +37,7 @@ const tabs = [
     bottom: 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: rgba(11, 15, 23, 0.92);
     backdrop-filter: blur(14px);
@@ -69,7 +70,7 @@ const tabs = [
   position: relative;
   display: grid;
   place-items: center;
-  width: 48px;
+  width: 44px;
   height: 30px;
   border-radius: 999px;
   transition: background 0.2s ease;

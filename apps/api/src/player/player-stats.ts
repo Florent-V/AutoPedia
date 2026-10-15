@@ -18,6 +18,11 @@ export interface PlayerStats {
   countries: number;
   decades: number;
   maxQuantity: number;
+  credits: number;
+  creditsEarned: number;
+  gamesPlayed: number;
+  tradesCompleted: number;
+  shopPurchases: number;
 }
 
 export type StatKey = keyof PlayerStats;
@@ -74,5 +79,10 @@ export async function computePlayerStats(db: Db, userId: string): Promise<Player
     countries: num(row?.countries),
     decades: num(row?.decades),
     maxQuantity: num(row?.maxQuantity),
+    credits: player?.credits ?? 0,
+    creditsEarned: player?.creditsEarned ?? 0,
+    gamesPlayed: player?.gamesPlayed ?? 0,
+    tradesCompleted: player?.tradesCompleted ?? 0,
+    shopPurchases: player?.shopPurchases ?? 0,
   };
 }

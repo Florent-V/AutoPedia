@@ -1,11 +1,13 @@
 <script setup lang="ts">
 const player = usePlayerState();
 const badges = ref<Achievement[]>([]);
+const wallet = ref<{ balance: number; earned: number; history: Array<{ id: string; label: string; amount: number; createdAt: string }> } | null>(null);
 
 onMounted(async () => {
   await refreshPlayer();
   const res = await api<{ achievements: Achievement[] }>('/achievements');
   badges.value = res.achievements.filter((a) => a.unlockedAt);
+  wallet.value = await api('/wallet');
 });
 
 const stats = computed(() => {
@@ -21,6 +23,9 @@ const stats = computed(() => {
     { label: 'Pays représentés', value: s.countries, icon: '🌍' },
     { label: 'Décennies couvertes', value: s.decades, icon: '⏳' },
     { label: 'Boosters ouverts', value: s.boostersOpened, icon: '🎁' },
+    { label: 'Parties jouées', value: s.gamesPlayed ?? 0, icon: '🎮' },
+    { label: 'Échanges conclus', value: s.tradesCompleted ?? 0, icon: '🤝' },
+    { label: 'Achats en boutique', value: s.shopPurchases ?? 0, icon: '🛒' },
   ];
 });
 </script>
@@ -47,7 +52,10 @@ const stats = computed(() => {
     </section>
 
     <section class="panel">
-      <h2>Vitrine de badges</h2>
+      <div class="showcase__head">
+        <h2>Vitrine de badges</h2>
+        <NuxtLink to="/achievements" class="btn btn-ghost">Tous les succès →</NuxtLink>
+      </div>
       <p v-if="!badges.length" class="muted">Aucun badge pour l’instant : ouvrez vos premiers boosters !</p>
       <div class="showcase">
         <div v-for="b in badges" :key="b.id" class="showcase__item" :title="`${b.name} — ${b.description}`">
@@ -57,12 +65,27 @@ const stats = computed(() => {
       </div>
     </section>
 
+    <section v-if="wallet" class="panel wallet">
+      <div class="showcase__head">
+        <h2>Crédits</h2>
+        <span class="chip">🪙 {{ formatNumber(wallet.balance) }}</span>
+      </div>
+      <p class="muted">{{ formatNumber(wallet.earned) }} crédits gagnés au total. Gagnez-en dans les <NuxtLink to="/games">mini-jeux</NuxtLink> ou en vendant à la bourse.</p>
+      <ul v-if="wallet.history.length" class="wallet__list">
+        <li v-for="h in wallet.history.slice(0, 8)" :key="h.id">
+          <span>{{ h.label }}</span>
+          <small class="muted">{{ new Date(h.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</small>
+          <strong :class="h.amount > 0 ? 'plus' : 'minus'">{{ h.amount > 0 ? '+' : '' }}{{ formatNumber(h.amount) }}</strong>
+        </li>
+      </ul>
+    </section>
+
     <AppSettings />
 
     <section class="panel social">
-      <h2>Bientôt : amis & échanges</h2>
+      <h2>Bientôt : amis</h2>
       <p class="muted">
-        Ajoutez vos amis et échangez vos doublons pour compléter votre collection. Le mode solo d’abord, le garage partagé ensuite !
+        La bourse d’échanges est ouverte à tous. Prochaine étape : une liste d’amis pour échanger en privé et comparer vos garages.
       </p>
     </section>
   </div>
@@ -126,6 +149,18 @@ const stats = computed(() => {
   font-size: 1.4rem;
 }
 
+.showcase__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.showcase__head h2 {
+  margin: 0;
+}
+
 .showcase {
   display: flex;
   flex-wrap: wrap;
@@ -143,6 +178,33 @@ const stats = computed(() => {
 .showcase__item small {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.wallet {
+  margin-top: 24px;
+}
+
+.wallet__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wallet__list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.plus {
+  color: var(--success);
+}
+
+.minus {
+  color: var(--danger);
 }
 
 .social {

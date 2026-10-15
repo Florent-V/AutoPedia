@@ -8,7 +8,7 @@ export interface AchievementDef {
   description: string;
   icon: string;
   tier: BadgeTier;
-  category: 'Boosters' | 'Collection' | 'Rareté' | 'Exploration' | 'Score';
+  category: 'Boosters' | 'Collection' | 'Rareté' | 'Exploration' | 'Score' | 'Mini-jeux' | 'Marché';
   stat: StatKey;
   goal: number;
 }
@@ -52,6 +52,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   def('racing-5', 'Exploration', 'Paddock', 'Posséder 5 voitures de course', '🏁', 'silver', 'racing', 5),
   def('racing-20', 'Exploration', 'Écurie officielle', 'Posséder 20 voitures de course', '🏎️', 'gold', 'racing', 20),
   def('decades-6', 'Exploration', 'Voyage dans le temps', 'Posséder des voitures de 6 décennies différentes', '⏳', 'silver', 'decades', 6),
+
+  def('games-1', 'Mini-jeux', 'Échauffement', 'Terminer une partie de mini-jeu', '🎮', 'bronze', 'gamesPlayed', 1),
+  def('games-25', 'Mini-jeux', 'Pilote d’essai', 'Terminer 25 parties de mini-jeux', '🕹️', 'silver', 'gamesPlayed', 25),
+  def('games-100', 'Mini-jeux', 'Encyclopédiste', 'Terminer 100 parties de mini-jeux', '🧠', 'gold', 'gamesPlayed', 100),
+  def('credits-1000', 'Mini-jeux', 'Tirelire', 'Gagner 1 000 crédits au total', '💰', 'silver', 'creditsEarned', 1000),
+  def('credits-10000', 'Mini-jeux', 'Coffre-fort', 'Gagner 10 000 crédits au total', '🏦', 'gold', 'creditsEarned', 10000),
+
+  def('shop-1', 'Marché', 'Premier achat', 'Acheter une carte à la boutique', '🛒', 'bronze', 'shopPurchases', 1),
+  def('shop-10', 'Marché', 'Client fidèle', 'Acheter 10 cartes à la boutique', '🛍️', 'silver', 'shopPurchases', 10),
+  def('trades-1', 'Marché', 'Poignée de main', 'Conclure un échange à la bourse', '🤝', 'bronze', 'tradesCompleted', 1),
+  def('trades-10', 'Marché', 'Négociant', 'Conclure 10 échanges à la bourse', '📈', 'silver', 'tradesCompleted', 10),
+  def('trades-50', 'Marché', 'Courtier', 'Conclure 50 échanges à la bourse', '💼', 'gold', 'tradesCompleted', 50),
 
   def('points-100', 'Score', 'Plein d’essence', 'Atteindre 100 points de collection', '⛽', 'bronze', 'points', 100),
   def('points-1000', 'Score', 'Pole position', 'Atteindre 1 000 points de collection', '🥇', 'silver', 'points', 1000),

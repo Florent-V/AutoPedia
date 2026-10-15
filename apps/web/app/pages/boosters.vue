@@ -47,6 +47,10 @@ function close() {
       <div>
         <h1>Boosters</h1>
         <p>Un booster toutes les {{ regenMinutes }} minutes, jusqu’à {{ max }} en réserve.</p>
+        <p v-if="player?.pity" class="pity">
+          <span title="Garantie : au moins une carte Épique">🔮 Épique garantie dans {{ player.pity.epicIn }} booster{{ player.pity.epicIn > 1 ? 's' : '' }}</span>
+          <span title="Garantie : une carte Légendaire">👑 Légendaire garantie dans {{ player.pity.legendaryIn }}</span>
+        </p>
       </div>
       <div class="timer panel">
         <div class="timer__count">
@@ -98,6 +102,14 @@ function close() {
 </template>
 
 <style scoped>
+.pity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 6px !important;
+  font-size: 0.85rem;
+}
+
 .timer {
   display: flex;
   align-items: center;
@@ -148,7 +160,15 @@ function close() {
   .cta .btn {
     width: 100%;
   }
-  .timer {
+  .pity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 6px !important;
+  font-size: 0.85rem;
+}
+
+.timer {
     min-width: 0;
     width: 100%;
   }

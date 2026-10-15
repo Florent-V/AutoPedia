@@ -17,4 +17,11 @@ const { remainingMs } = useBoosterTimer();
   text-decoration: none;
   font-variant-numeric: tabular-nums;
 }
+
+/* Sur téléphone, le minuteur détaillé est sur la page Boosters : on garde le compteur compact. */
+@media (max-width: 480px) {
+  .counter .muted {
+    display: none;
+  }
+}
 </style>

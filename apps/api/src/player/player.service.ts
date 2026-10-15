@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Player, Prisma, PrismaClient } from '@prisma/client';
-import { gameConfig } from '../config';
+import { economyConfig, gameConfig } from '../config';
 import { BoosterStatus, computeBoosters } from '../game/booster-clock';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/auth.guard';
@@ -26,7 +26,12 @@ export class PlayerService {
     return db.player.upsert({
       where: { userId },
       update: {},
-      create: { userId, boosters: Math.min(gameConfig.startingBoosters, gameConfig.boosterMax) },
+      create: {
+        userId,
+        boosters: Math.min(gameConfig.startingBoosters, gameConfig.boosterMax),
+        // Crédits de bienvenue (non comptés dans « crédits gagnés » pour les succès).
+        credits: economyConfig.startingCredits,
+      },
     });
   }
 
@@ -51,6 +56,10 @@ export class PlayerService {
       boosters: boosterView(this.status(player)),
       stats: { ...stats, catalogSize: totalCards, achievements: unlocked },
       game: { cardsPerBooster: gameConfig.cardsPerBooster },
+      pity: {
+        epicIn: Math.max(1, economyConfig.pityEpic - player.sinceEpic),
+        legendaryIn: Math.max(1, economyConfig.pityLegendary - player.sinceLegendary),
+      },
     };
   }
 }

@@ -23,11 +23,16 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  player            Player?
-  cards             UserCard[]
-  openings          BoosterOpening[]
-  achievements      UserAchievement[]
-  pushSubscriptions PushSubscription[]
+  player             Player?
+  cards              UserCard[]
+  openings           BoosterOpening[]
+  achievements       UserAchievement[]
+  pushSubscriptions  PushSubscription[]
+  creditTransactions CreditTransaction[]
+  gameSessions       GameSession[]
+  shopPurchases      ShopPurchase[]
+  tradeOffers        TradeOffer[]        @relation("TradeSeller")
+  tradePurchases     TradeOffer[]        @relation("TradeBuyer")
 
   @@map("user")
 }
@@ -121,7 +126,7 @@ model Car {
   powerKw          Float?
   topSpeedKmh      Float?
   massKg           Float?
-  lengthMm        Int?
+  lengthMm         Int?
   /// Voiture de compétition (F1, endurance, rallye…).
   racing           Boolean   @default(false)
   /// Indicateur de notoriété (nombre d'articles Wikipédia liés) : sert à calculer la rareté.
@@ -133,7 +138,9 @@ model Car {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  owners UserCard[]
+  owners    UserCard[]
+  offeredIn TradeOffer[] @relation("TradeOffered")
+  wantedIn  TradeOffer[] @relation("TradeWanted")
 
   @@index([rarity, active])
   @@index([manufacturer])
@@ -153,10 +160,113 @@ model Player {
   fullNotifiedAnchor DateTime?
   boostersOpened     Int       @default(0)
   cardsObtained      Int       @default(0)
+  /// Boosters ouverts depuis la dernière carte Épique ou mieux (garantie).
+  sinceEpic          Int       @default(0)
+  /// Boosters ouverts depuis la dernière carte Légendaire (garantie).
+  sinceLegendary     Int       @default(0)
+  /// Solde de crédits (monnaie du jeu, gagnée dans les mini-jeux).
+  credits            Int       @default(0)
+  creditsEarned      Int       @default(0)
+  gamesPlayed        Int       @default(0)
+  tradesCompleted    Int       @default(0)
+  shopPurchases      Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@map("player")
+}
+
+/// Journal de tous les mouvements de crédits (audit, anti-triche, historique joueur).
+model CreditTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Positif = gain, négatif = dépense.
+  amount    Int
+  /// game:duel, game:quiz, shop, trade:sale, trade:purchase, welcome…
+  reason    String
+  /// Référence de l'objet concerné (session de jeu, offre, achat).
+  ref       String?
+  balance   Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("credit_transaction")
+}
+
+enum GameType {
+  DUEL
+  QUIZ
+}
+
+enum GameStatus {
+  ACTIVE
+  FINISHED
+}
+
+/// Partie de mini-jeu. Les bonnes réponses restent côté serveur (champ `state`), jamais envoyées au client.
+model GameSession {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        GameType
+  status      GameStatus @default(ACTIVE)
+  state       Json
+  round       Int        @default(0)
+  score       Int        @default(0)
+  credits     Int        @default(0)
+  rewardCarId Int?
+  createdAt   DateTime   @default(now())
+  finishedAt  DateTime?
+
+  @@index([userId, type, createdAt])
+  @@map("game_session")
+}
+
+/// Achat dans la boutique de l'application (une offre horaire = un achat max par joueur).
+model ShopPurchase {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Identifiant de l'offre : « 2026-10-15T14:<rareté>:<position> ».
+  offerKey  String
+  carId     Int
+  price     Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, offerKey])
+  @@map("shop_purchase")
+}
+
+enum TradeStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+/// Offre de la bourse d'échanges : une carte proposée contre une carte précise ou des crédits.
+/// La carte proposée est mise sous séquestre (retirée de la collection) tant que l'offre est ouverte.
+model TradeOffer {
+  id           String      @id @default(uuid())
+  sellerId     String
+  seller       User        @relation("TradeSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  offeredCarId Int
+  offeredCar   Car         @relation("TradeOffered", fields: [offeredCarId], references: [id], onDelete: Cascade)
+  wantedCarId  Int?
+  wantedCar    Car?        @relation("TradeWanted", fields: [wantedCarId], references: [id], onDelete: Cascade)
+  price        Int?
+  status       TradeStatus @default(OPEN)
+  buyerId      String?
+  buyer        User?       @relation("TradeBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  expiresAt    DateTime
+  closedAt     DateTime?
+
+  @@index([status, createdAt])
+  @@index([sellerId, status])
+  @@index([offeredCarId, status])
+  @@index([wantedCarId, status])
+  @@map("trade_offer")
 }
 
 /// Cartes possédées. Une ligne par (joueur, carte) avec un nombre d'exemplaires :
