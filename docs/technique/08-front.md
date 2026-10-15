@@ -17,7 +17,7 @@
 | Collection | `pages/collection.vue` | Filtres repris dans l'adresse, pagination |
 | Succès | `pages/achievements.vue` | Groupés par catégorie |
 | Jeux | `pages/games/index.vue` | Parties restantes, remise à zéro |
-| Partie | `pages/games/[id].vue` | Duel et quiz ; repli sur le dessin technique si une image ne charge pas |
+| Partie | `pages/games/[id].vue` | Les 5 jeux : paires (Duel, Poids lourds), choix (Quiz, Question pour une carte), portes de garage animées (3 garages) ; repli sur le dessin technique si une image ne charge pas |
 | Marché | `pages/market.vue` | Onglets `MarketShopTab` et `MarketTradesTab` |
 | Profil | `pages/profile.vue` | Statistiques, crédits, vitrine de badges, réglages de l'application |
 

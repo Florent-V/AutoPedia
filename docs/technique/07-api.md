@@ -43,10 +43,10 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 
 | Méthode | Route | Rôle |
 | --- | --- | --- |
-| GET | `/games` | `resetsAt`, `games[]` (`type`, `name`, `description`, `rounds`, `creditsPerWin`, `playsPerDay`, `playsLeft`, `active`, `bestScore`) |
-| POST | `/games/:type/start` | `type` = `DUEL` ou `QUIZ`. Renvoie la partie (reprise de la partie active s'il y en a une). `409` si plus de partie aujourd'hui |
+| GET | `/games` | `resetsAt`, `games[]` (`type`, `name`, `description`, `reward`, `rounds`, `creditsPerWin`, `playsPerDay`, `playsLeft`, `active`, `bestScore`) |
+| POST | `/games/:type/start` | `type` = `DUEL`, `QUIZ`, `WEIGHT`, `MYSTERY` ou `DOORS`. Renvoie la partie (reprise de la partie active s'il y en a une). `409` si plus de partie aujourd'hui |
 | GET | `/games/sessions/:id` | Partie : `round`, `total`, `score`, `credits`, `history[]`, `question` (sans la réponse) |
-| POST | `/games/sessions/:id/answer` | `{ choice }` (`'a'`/`'b'` ou `0..3`) → `correct`, `answer`, `reveal`, `gained`, `balance`, `session`, `summary` (à la fin : `score`, `credits`, `rewardCard`, `newAchievements`) |
+| POST | `/games/sessions/:id/answer` | `{ choice }` (`'a'`/`'b'`, `0..3` ou `0..2` selon le jeu) → `correct`, `answer`, `reveal`, `doors` (3 garages), `prize` (carte gagnée), `gained`, `balance`, `session`, `summary` (à la fin : `score`, `credits`, `rewardCard`, `prize`, `newAchievements`) |
 
 ## Boutique
 

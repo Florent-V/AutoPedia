@@ -19,8 +19,12 @@ export const economyConfig = {
   /** Fuseau horaire des journées de jeu et des rotations de la boutique. */
   timezone: process.env.GAME_TIMEZONE ?? 'Europe/Paris',
   startingCredits: int('STARTING_CREDITS', 100),
-  /** Parties par jour et par mini-jeu. */
+  /** Parties par jour et par mini-jeu à crédits (Duel, Quiz). */
   gamesPerDay: int('GAMES_PER_DAY', 3),
+  /** Parties par jour des jeux rapides à carte (Poids lourds, Question pour une carte). */
+  quickGamesPerDay: int('QUICK_GAMES_PER_DAY', 5),
+  /** Parties par jour des « 3 garages ». */
+  doorsPerDay: int('DOORS_PER_DAY', 2),
   duelRounds: 10,
   duelCreditsPerWin: 10,
   quizQuestions: 5,

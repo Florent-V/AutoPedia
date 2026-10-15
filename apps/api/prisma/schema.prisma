@@ -170,6 +170,9 @@ model Player {
   gamesPlayed        Int       @default(0)
   tradesCompleted    Int       @default(0)
   shopPurchases      Int       @default(0)
+  /// Cartes gagnées dans les mini-jeux / gros lots des 3 garages (succès).
+  gameCardsWon       Int       @default(0)
+  doorsJackpots      Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -197,6 +200,12 @@ model CreditTransaction {
 enum GameType {
   DUEL
   QUIZ
+  /// Poids lourds : la plus lourde des deux voitures, carte à gagner
+  WEIGHT
+  /// Question pour une carte : une carte, une question à 4 choix
+  MYSTERY
+  /// Les 3 garages : trois portes, une vide, une standard, une haut de gamme
+  DOORS
 }
 
 enum GameStatus {

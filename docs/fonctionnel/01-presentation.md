@@ -20,14 +20,14 @@ Le jeu se joue en solo, mais l'économie (crédits, bourse) relie déjà les jou
                                                        │   ▲
    [Mini-jeux] ──crédits──► [Boutique] ──carte─────────┘   │
         │                                                  │
-        └── sans-faute ──► carte bonus ────────────────────┤
+        └── carte gagnée / bonus ──────────────────────────┤
                                                            │
    [Doublons] ──mise en bourse──► [Bourse] ◄──► autres joueurs
 ```
 
 1. **Revenir régulièrement** : la réserve se remplit toute seule. Une notification prévient quand elle est pleine.
 2. **Ouvrir ses boosters** : c'est la source principale de cartes.
-3. **Jouer aux mini-jeux** : trois parties par jour et par jeu, pour gagner des crédits.
+3. **Jouer aux mini-jeux** : des jeux rapides pour gagner une carte en un geste, et des jeux de culture automobile pour gagner des crédits.
 4. **Dépenser ses crédits** à la boutique, dont le contenu tourne toutes les heures.
 5. **Échanger ses doublons** à la bourse contre des cartes manquantes ou des crédits.
 6. **Débloquer des succès**, à afficher dans sa vitrine de badges.

@@ -5,8 +5,8 @@ Jeu de collection de cartes sur le thème de l'automobile, pensé d'abord pour l
 - 🎁 **Boosters** : un nouveau toutes les 30 minutes, 10 en réserve au maximum, 5 cartes chacun ; une Épique garantie au plus tard tous les 10 boosters, une Légendaire tous les 60.
 - 💎 **5 raretés** calculées d'après la notoriété du modèle ; les Épiques et les Légendaires sont holographiques.
 - 📚 **Collection** filtrable, avec une fiche détaillée par carte et les crédits des photos.
-- 🏆 **36 succès** en quatre paliers (bronze, argent, or, platine).
-- 🎮 **Mini-jeux** (Duel de stats, Quiz auto) pour gagner des crédits et des cartes bonus.
+- 🏆 **39 succès** en quatre paliers (bronze, argent, or, platine).
+- 🎮 **5 mini-jeux** : des jeux rapides où l'on gagne une carte (Poids lourds, Question pour une carte, Les 3 garages) et des jeux à crédits (Duel de stats, Quiz auto).
 - 🛒 **Boutique** dont le contenu tourne toutes les heures, avec une « affaire de l'heure ».
 - 🤝 **Bourse d'échanges** ouverte à tous : carte contre carte ou contre crédits, avec séquestre.
 - 📱 **Application installable**, avec des notifications quand la réserve de boosters est pleine.

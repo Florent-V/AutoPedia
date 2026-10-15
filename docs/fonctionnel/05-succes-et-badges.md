@@ -5,7 +5,7 @@ Les succès récompensent la progression dans toutes les dimensions du jeu. Chaq
 ## Fonctionnement
 
 - Chaque succès associe une **statistique** du joueur à un **objectif** (par exemple « boosters ouverts ≥ 50 »).
-- Les succès sont vérifiés automatiquement après chaque action qui peut les faire progresser : ouverture d'un booster, fin d'une partie de mini-jeu, achat en boutique, échange à la bourse. Pour un échange, la vérification se fait **pour les deux joueurs**.
+- Les succès sont vérifiés automatiquement après chaque action qui peut les faire progresser : ouverture d'un booster, fin d'une partie de mini-jeu (y compris une carte gagnée), achat en boutique, échange à la bourse. Pour un échange, la vérification se fait **pour les deux joueurs**.
 - Un succès débloqué l'est définitivement, même si la statistique baisse ensuite (par exemple si le joueur donne des cartes).
 - Le joueur est prévenu par une notification à l'écran.
 
@@ -23,7 +23,7 @@ Les succès récompensent la progression dans toutes les dimensions du jeu. Chaq
 - **Page Succès** (`/achievements`, accessible depuis le profil) : tous les succès groupés par catégorie, avec une barre de progression (« 37/50 ») pour ceux qui restent à débloquer et la date d'obtention pour les autres.
 - **Vitrine de badges** sur le profil : les badges obtenus.
 
-## Liste des 36 succès
+## Liste des 39 succès
 
 
 ### Boosters
@@ -76,6 +76,9 @@ Les succès récompensent la progression dans toutes les dimensions du jeu. Chaq
 | 🎮 | Échauffement | Terminer une partie de mini-jeu | Bronze |
 | 🕹️ | Pilote d’essai | Terminer 25 parties de mini-jeux | Argent |
 | 🧠 | Encyclopédiste | Terminer 100 parties de mini-jeux | Or |
+| 🎴 | Butin | Gagner 10 cartes dans les mini-jeux | Bronze |
+| 🏅 | Chasseur de trophées | Gagner 100 cartes dans les mini-jeux | Or |
+| 🚪 | Bonne porte | Trouver la carte Épique ou Légendaire des 3 garages | Argent |
 | 💰 | Tirelire | Gagner 1 000 crédits au total | Argent |
 | 🏦 | Coffre-fort | Gagner 10 000 crédits au total | Or |
 

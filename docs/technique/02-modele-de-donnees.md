@@ -49,7 +49,7 @@ user ─┬─< session, account            (Better Auth)
 | `fullNotifiedAnchor` | Évite de notifier deux fois le même remplissage |
 | `sinceEpic`, `sinceLegendary` | Compteurs de garantie |
 | `credits`, `creditsEarned` | Solde et cumul gagné (hors bonus de bienvenue) |
-| `boostersOpened`, `cardsObtained`, `gamesPlayed`, `tradesCompleted`, `shopPurchases` | Compteurs pour les statistiques et les succès |
+| `boostersOpened`, `cardsObtained`, `gamesPlayed`, `tradesCompleted`, `shopPurchases`, `gameCardsWon`, `doorsJackpots` | Compteurs pour les statistiques et les succès |
 
 La ligne `player` est créée à la première requête du joueur (`upsert`), avec 10 boosters et 100 crédits.
 
@@ -62,7 +62,7 @@ La ligne `player` est créée à la première requête du joueur (`upsert`), ave
 ### Économie
 
 - `credit_transaction` : `amount` (positif ou négatif), `reason` (`game:duel`, `game:quiz`, `shop`, `trade:sale`, `trade:purchase`), `ref` (identifiant de l'objet concerné), `balance` (solde après opération).
-- `game_session` : `type` (DUEL ou QUIZ), `status`, `round`, `score`, `credits`, `rewardCarId`, et `state` (JSON) qui contient la question en cours **avec sa réponse** (jamais renvoyée au client) et les cartes déjà utilisées.
+- `game_session` : `type` (DUEL, QUIZ, WEIGHT, MYSTERY, DOORS), `status`, `round`, `score`, `credits`, `rewardCarId`, et `state` (JSON) qui contient la question en cours **avec sa réponse** (jamais renvoyée au client) et les cartes déjà utilisées.
 - `shop_purchase` : `offerKey` (unique par joueur, ce qui empêche le double achat), `carId`, `price`.
 - `trade_offer` : `offeredCarId`, `wantedCarId` **ou** `price`, `status` (OPEN, COMPLETED, CANCELLED), `buyerId`, `expiresAt`.
 

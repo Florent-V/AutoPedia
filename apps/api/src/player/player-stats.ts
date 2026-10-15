@@ -23,6 +23,8 @@ export interface PlayerStats {
   gamesPlayed: number;
   tradesCompleted: number;
   shopPurchases: number;
+  gameCardsWon: number;
+  doorsJackpots: number;
 }
 
 export type StatKey = keyof PlayerStats;
@@ -84,5 +86,7 @@ export async function computePlayerStats(db: Db, userId: string): Promise<Player
     gamesPlayed: player?.gamesPlayed ?? 0,
     tradesCompleted: player?.tradesCompleted ?? 0,
     shopPurchases: player?.shopPurchases ?? 0,
+    gameCardsWon: player?.gameCardsWon ?? 0,
+    doorsJackpots: player?.doorsJackpots ?? 0,
   };
 }

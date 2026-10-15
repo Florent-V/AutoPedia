@@ -32,10 +32,27 @@ POST /games/sessions/:id/answer { choice }
   └─ sinon : génération de la question suivante (cartes déjà utilisées exclues)
 ```
 
+### Deux modes de récompense
+
+`GAMES` (dans `games.service.ts`) décrit chaque jeu : nombre de manches, parties par jour, `reward` (`credits` ou `card`), arrêt à la première erreur, carte bonus pour un sans-faute, format de réponse attendu (`'a'`/`'b'`, 3 ou 4 choix).
+
+| Type | Manches | Récompense | Réponse |
+| --- | --- | --- | --- |
+| `DUEL` | 10 (arrêt à la 1ʳᵉ erreur) | 10 🪙 par bonne réponse + bonus | `'a'`/`'b'` |
+| `QUIZ` | 5 | 15 🪙 par bonne réponse + bonus | 0..3 |
+| `WEIGHT` | 1 | la carte `prizeCarId` (la plus lourde) | `'a'`/`'b'` |
+| `MYSTERY` | 1 | la carte `prizeCarId` (la carte montrée) | 0..3 |
+| `DOORS` | 1 | la carte derrière la porte choisie | 0..2 |
+
+Pour les jeux à carte, la question stockée contient `prizeCarId`. Pour les 3 garages, elle contient `outcomes` (`tier` et `carId` des trois portes). Ces champs sont retirés de la vue envoyée au client, au même titre que `answer`. La réponse à `answer` contient alors `prize` (la carte gagnée, avec `isNew` et `quantity`) et, pour les 3 garages, `doors` (le contenu révélé des trois portes). Les compteurs `gameCardsWon` et `doorsJackpots` du joueur alimentent les succès.
+
 ### Génération des questions (`questions.ts`)
 
 - **Duel** : on choisit au hasard un critère (vitesse, puissance, masse, longueur, année, notoriété), puis on cherche parmi 40 voitures aléatoires qui ont ce critère une paire dont l'écart passe le seuil `minGap`. Si aucune paire ne convient, on essaie le critère suivant. Les noms de colonnes viennent d'une liste fixe : pas d'injection SQL possible.
 - **Quiz** : on choisit un type au hasard (marque, pays, décennie, photo), puis une voiture qui a la donnée nécessaire, puis trois mauvaises réponses (`DISTINCT … ORDER BY random()`). Pour la photo, les mauvaises réponses sont d'abord prises dans la même marque. L'ordre des choix est mélangé, sauf pour les décennies.
+- **Poids lourds** (`makeWeightRound`) : rareté de chaque voiture tirée avec `rollRarity(false)`, puis une voiture de cette rareté avec une masse connue ; 6 essais pour trouver une paire avec au moins 8 % d'écart (les 2 derniers sans contrainte de rareté), puis repli sur `makeDuelRound`.
+- **Question pour une carte** (`makeMysteryRound`) : rareté tirée avec `rollRarity(false)`. Le type de question dépend de la rareté (pays, décennie, année exacte) et se rabat sur un type plus simple si la donnée manque. Les décennies proposées sont 4 décennies consécutives, la bonne étant à une position aléatoire ; les années sont 4 années distinctes à ±6 ans au plus, triées.
+- **Les 3 garages** (`makeDoorsRound`) : `pickCar` d'une Commune ou Peu commune (70/30) et d'une Épique ou Légendaire (80/20), plus une porte vide, dans un ordre mélangé.
 - **Vue client** : `view()` retire `answer`, `reveal` et `carId` de la question avant de l'envoyer. Les cartes de jeu (`gameCard`) ne contiennent que l'identifiant, le nom, la marque, l'image et la rareté : aucune valeur qui donnerait la réponse.
 
 ## Boutique (`src/shop/`)

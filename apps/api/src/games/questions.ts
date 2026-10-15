@@ -1,4 +1,5 @@
-import { Car, Prisma } from '@prisma/client';
+import { Car, Prisma, Rarity } from '@prisma/client';
+import { rollRarity } from '../game/rarity';
 import { imageUrlOf } from '../cars/card.dto';
 
 type Tx = Prisma.TransactionClient;
@@ -182,6 +183,107 @@ export async function makeQuizRound(tx: Tx, used: number[]): Promise<QuizRound |
       const q = build('photo', 'Quel est ce modèle ?', car, car.name, rows.map((r) => r.name), false);
       if (q) return q;
     }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Jeux « une carte à gagner »
+// ---------------------------------------------------------------------------
+
+/** Voiture aléatoire d'une rareté donnée (ou de n'importe quelle rareté) respectant une condition. */
+async function randomCarOf(tx: Tx, rarity: Rarity | null, where: Prisma.Sql, used: number[]): Promise<Car | null> {
+  const rarityFilter = rarity ? Prisma.sql`AND COALESCE("rarityOverride", "rarity") = ${rarity}::"Rarity"` : Prisma.empty;
+  const rows = await tx.$queryRaw<Array<{ id: number }>>`
+    SELECT "id" FROM "car"
+    WHERE "active" = true AND ${where} ${rarityFilter} AND NOT ("id" = ANY(${used}::int[]))
+    ORDER BY random() LIMIT 1`;
+  return rows.length ? tx.car.findUnique({ where: { id: rows[0].id } }) : null;
+}
+
+export interface WeightRound extends DuelRound {
+  /** Carte remportée en cas de bonne réponse : la plus lourde (ou la gagnante du critère de repli). */
+  prizeCarId: number;
+}
+
+/**
+ * Poids lourds : deux voitures dont la rareté est tirée comme dans un booster, la plus lourde est à gagner.
+ * Si le catalogue manque de masses connues, on se rabat sur un autre critère du duel.
+ */
+export async function makeWeightRound(tx: Tx, used: number[]): Promise<WeightRound | null> {
+  const mass = DUEL_STATS.find((s) => s.key === 'massKg')!;
+  const hasMass = Prisma.sql`"massKg" IS NOT NULL AND "massKg" > 0`;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const a = await randomCarOf(tx, attempt < 4 ? rollRarity(false) : null, hasMass, used);
+    if (!a) continue;
+    const b = await randomCarOf(tx, attempt < 4 ? rollRarity(false) : null, hasMass, [...used, a.id]);
+    if (!b || !mass.minGap(a.massKg!, b.massKg!)) continue;
+    const aWins = a.massKg! > b.massKg!;
+    return {
+      stat: 'massKg',
+      question: 'Laquelle est la plus lourde ?',
+      a: gameCard(a),
+      b: gameCard(b),
+      answer: aWins ? 'a' : 'b',
+      reveal: { a: mass.format(a.massKg!), b: mass.format(b.massKg!) },
+      prizeCarId: aWins ? a.id : b.id,
+    };
+  }
+  const fallback = await makeDuelRound(tx, used);
+  if (!fallback) return null;
+  return { ...fallback, prizeCarId: fallback.answer === 'a' ? fallback.a.id : fallback.b.id };
+}
+
+export interface MysteryRound {
+  kind: 'country' | 'decade' | 'year';
+  prompt: string;
+  card: ReturnType<typeof gameCard>;
+  choices: string[];
+  answer: number;
+  carId: number;
+  prizeCarId: number;
+}
+
+/**
+ * Question pour une carte : la carte à gagner est visible, la difficulté de la question suit sa rareté.
+ *  - Commune / Peu commune : le pays (la marque, visible, aide)
+ *  - Rare : la décennie (4 décennies consécutives)
+ *  - Épique / Légendaire : l'année exacte (4 années proches)
+ */
+export async function makeMysteryRound(tx: Tx, used: number[]): Promise<MysteryRound | null> {
+  const rarity = rollRarity(false);
+  const wanted: MysteryRound['kind'] = rarity === 'RARE' ? 'decade' : rarity === 'EPIC' || rarity === 'LEGENDARY' ? 'year' : 'country';
+  const order: MysteryRound['kind'][] = wanted === 'country' ? ['country', 'decade'] : [wanted, 'decade', 'country'];
+
+  for (const kind of order) {
+    const cond = kind === 'country' ? Prisma.sql`"country" IS NOT NULL` : Prisma.sql`"yearStart" IS NOT NULL`;
+    const car = (await randomCarOf(tx, rarity, cond, used)) ?? (await randomCarOf(tx, null, cond, used));
+    if (!car) continue;
+
+    let correct: string;
+    let choices: string[];
+    if (kind === 'country') {
+      const others = await distinctValues(tx, 'country', car.country!, 3);
+      if (others.length < 3) continue;
+      correct = car.country!;
+      choices = shuffle([correct, ...others]);
+    } else if (kind === 'decade') {
+      const decade = Math.floor(car.yearStart! / 10) * 10;
+      // 4 décennies consécutives, la bonne à une position aléatoire, bornées à 1880–2020.
+      let first = decade - 10 * Math.floor(Math.random() * 4);
+      first = Math.min(Math.max(first, 1880), 2020 - 30);
+      choices = [0, 1, 2, 3].map((i) => `Années ${first + i * 10}`);
+      correct = `Années ${decade}`;
+      if (!choices.includes(correct)) continue;
+    } else {
+      const y = car.yearStart!;
+      const pool = shuffle([-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6].map((d) => y + d).filter((v) => v <= new Date().getFullYear()));
+      correct = String(y);
+      choices = [correct, ...pool.slice(0, 3).map(String)].sort();
+    }
+    const prompt =
+      kind === 'country' ? 'De quel pays vient cette voiture ?' : kind === 'decade' ? 'En quelle décennie est-elle sortie ?' : 'En quelle année est-elle sortie ?';
+    return { kind, prompt, card: gameCard(car), choices, answer: choices.indexOf(correct), carId: car.id, prizeCarId: car.id };
   }
   return null;
 }

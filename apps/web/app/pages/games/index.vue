@@ -1,6 +1,7 @@
 <script setup lang="ts">
 interface GameInfo {
-  type: 'DUEL' | 'QUIZ';
+  type: 'DUEL' | 'QUIZ' | 'WEIGHT' | 'MYSTERY' | 'DOORS';
+  reward: 'credits' | 'card';
   name: string;
   description: string;
   rounds: number;
@@ -17,7 +18,16 @@ const starting = ref<string | null>(null);
 const now = ref(Date.now());
 let timer: ReturnType<typeof setInterval> | undefined;
 
-const icons: Record<string, string> = { DUEL: '⚔️', QUIZ: '🧠' };
+const icons: Record<string, string> = { DUEL: '⚔️', QUIZ: '🧠', WEIGHT: '⚖️', MYSTERY: '🃏', DOORS: '🚪' };
+
+const facts: Record<string, string[]> = {
+  WEIGHT: ['🎴 Bonne réponse = la plus lourde est à vous', '⚡ Une seule question, réponse immédiate'],
+  MYSTERY: ['🎴 Bonne réponse = la carte est à vous', '📈 Commune : le pays · Rare : la décennie · Épique / Légendaire : l’année exacte'],
+  DOORS: ['🎴 Une carte standard derrière une porte', '👑 Une Épique ou une Légendaire derrière une autre', '💨 Rien derrière la dernière…'],
+};
+
+const cardGames = computed(() => data.value?.games.filter((g) => g.reward === 'card') ?? []);
+const creditGames = computed(() => data.value?.games.filter((g) => g.reward === 'credits') ?? []);
 
 onMounted(async () => {
   timer = setInterval(() => (now.value = Date.now()), 1000);
@@ -44,19 +54,27 @@ async function play(game: GameInfo) {
     <div class="page-head">
       <div>
         <h1>Mini-jeux</h1>
-        <p>Gagnez des crédits à dépenser au marché. Un sans-faute rapporte une carte bonus !</p>
+        <p>Gagnez des cartes en un instant, ou des crédits à dépenser au marché.</p>
       </div>
       <span v-if="data" class="chip">Nouvelles parties dans {{ formatDuration(new Date(data.resetsAt).getTime() - now) }}</span>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
 
+    <template v-for="section in [
+      { title: 'Jeux rapides · une carte à gagner', list: cardGames },
+      { title: 'Jeux à crédits', list: creditGames },
+    ]" :key="section.title">
+    <h2 v-if="section.list.length" class="section-title">{{ section.title }}</h2>
     <section class="games">
-      <article v-for="g in data?.games ?? []" :key="g.type" class="panel game" :class="g.type.toLowerCase()">
+      <article v-for="g in section.list" :key="g.type" class="panel game" :class="g.type.toLowerCase()">
         <div class="game__icon">{{ icons[g.type] }}</div>
         <h2>{{ g.name }}</h2>
         <p class="muted">{{ g.description }}</p>
-        <ul class="game__facts">
+        <ul v-if="g.reward === 'card'" class="game__facts">
+          <li v-for="f in facts[g.type]" :key="f">{{ f }}</li>
+        </ul>
+        <ul v-else class="game__facts">
           <li>🪙 {{ g.creditsPerWin }} crédits par bonne réponse</li>
           <li>🎴 Carte bonus pour un {{ g.rounds }}/{{ g.rounds }}</li>
           <li>🏆 Meilleur score : {{ g.bestScore }}/{{ g.rounds }}</li>
@@ -70,6 +88,7 @@ async function play(game: GameInfo) {
         </button>
       </article>
     </section>
+    </template>
   </div>
 </template>
 
@@ -78,6 +97,16 @@ async function play(game: GameInfo) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 18px;
+}
+
+.section-title {
+  font-size: 1.15rem;
+  margin: 26px 0 12px;
+  color: var(--muted);
+}
+
+.section-title:first-of-type {
+  margin-top: 0;
 }
 
 .game {
@@ -105,6 +134,15 @@ async function play(game: GameInfo) {
 }
 .quiz {
   --glow: var(--r-rare);
+}
+.weight {
+  --glow: var(--r-uncommon);
+}
+.mystery {
+  --glow: var(--r-epic);
+}
+.doors {
+  --glow: var(--r-legendary);
 }
 
 .game__icon {

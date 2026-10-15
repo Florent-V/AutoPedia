@@ -60,7 +60,9 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `PITY_EPIC`, `PITY_LEGENDARY` | 10, 60 | Garanties |
 | `GAME_TIMEZONE` | `Europe/Paris` | Fuseau des journées et des rotations |
 | `STARTING_CREDITS` | 100 | Crédits de bienvenue |
-| `GAMES_PER_DAY` | 3 | Parties par jour et par mini-jeu |
+| `GAMES_PER_DAY` | 3 | Parties par jour des jeux à crédits (Duel, Quiz) |
+| `QUICK_GAMES_PER_DAY` | 5 | Parties par jour de Poids lourds et de Question pour une carte |
+| `DOORS_PER_DAY` | 2 | Parties par jour des 3 garages |
 | `TRADE_DAYS`, `MAX_OPEN_TRADES` | 7, 10 | Bourse |
 | `SHOP_SECRET` | dérivé de `BETTER_AUTH_SECRET` | Graine du programme de la boutique |
 

@@ -56,6 +56,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   def('games-1', 'Mini-jeux', 'Échauffement', 'Terminer une partie de mini-jeu', '🎮', 'bronze', 'gamesPlayed', 1),
   def('games-25', 'Mini-jeux', 'Pilote d’essai', 'Terminer 25 parties de mini-jeux', '🕹️', 'silver', 'gamesPlayed', 25),
   def('games-100', 'Mini-jeux', 'Encyclopédiste', 'Terminer 100 parties de mini-jeux', '🧠', 'gold', 'gamesPlayed', 100),
+  def('gamecards-10', 'Mini-jeux', 'Butin', 'Gagner 10 cartes dans les mini-jeux', '🎴', 'bronze', 'gameCardsWon', 10),
+  def('gamecards-100', 'Mini-jeux', 'Chasseur de trophées', 'Gagner 100 cartes dans les mini-jeux', '🏅', 'gold', 'gameCardsWon', 100),
+  def('jackpot-1', 'Mini-jeux', 'Bonne porte', 'Trouver la carte Épique ou Légendaire des 3 garages', '🚪', 'silver', 'doorsJackpots', 1),
   def('credits-1000', 'Mini-jeux', 'Tirelire', 'Gagner 1 000 crédits au total', '💰', 'silver', 'creditsEarned', 1000),
   def('credits-10000', 'Mini-jeux', 'Coffre-fort', 'Gagner 10 000 crédits au total', '🏦', 'gold', 'creditsEarned', 10000),
 

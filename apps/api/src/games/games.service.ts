@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import { GameSession, GameType, Prisma } from '@prisma/client';
+import { GameSession, GameType, Prisma, Rarity } from '@prisma/client';
 import { economyConfig } from '../config';
 import { AchievementsService } from '../achievements/achievements.service';
 import { BoostersService } from '../boosters/boosters.service';
@@ -9,10 +9,27 @@ import { rollRarity } from '../game/rarity';
 import { startOfZonedDay } from '../game/zoned-time';
 import { PlayerService } from '../player/player.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { DuelRound, makeDuelRound, makeQuizRound, QuizRound } from './questions';
+import { DuelRound, makeDuelRound, makeMysteryRound, makeQuizRound, makeWeightRound, MysteryRound, QuizRound, WeightRound } from './questions';
 
 type Tx = Prisma.TransactionClient;
-type Round = (DuelRound | QuizRound) & { answer: unknown };
+
+/** Contenu d'une porte des « 3 garages ». */
+interface Door {
+  tier: 'none' | 'standard' | 'top';
+  carId: number | null;
+}
+
+interface DoorsRound {
+  kind: 'doors';
+  prompt: string;
+  doors: number;
+  outcomes: Door[];
+}
+
+type Round = (DuelRound | QuizRound | WeightRound | MysteryRound | DoorsRound) & {
+  answer?: unknown;
+  prizeCarId?: number;
+};
 
 interface SessionState {
   used: number[];
@@ -20,18 +37,80 @@ interface SessionState {
   history: Array<{ correct: boolean }>;
 }
 
-export const GAMES: Record<GameType, { name: string; description: string; rounds: number; creditsPerWin: number }> = {
+export interface GameDef {
+  name: string;
+  description: string;
+  rounds: number;
+  /** Crédits par bonne réponse (jeux à crédits). */
+  creditsPerWin: number;
+  /** Parties par jour. */
+  playsPerDay: number;
+  /** « credits » : on gagne des crédits ; « card » : on remporte la carte en jeu. */
+  reward: 'credits' | 'card';
+  /** La partie s'arrête à la première erreur. */
+  endsOnMistake: boolean;
+  /** Carte bonus pour un sans-faute (jeux à crédits). */
+  perfectBonus: boolean;
+  /** Nombre de choix possibles (validation de la réponse). */
+  choices: 'ab' | 3 | 4;
+}
+
+export const GAMES: Record<GameType, GameDef> = {
   DUEL: {
     name: 'Duel de stats',
-    description: 'Deux voitures, une question : laquelle est la plus rapide, la plus lourde, la plus ancienne… La partie s’arrête à la première erreur.',
+    description:
+      'Deux voitures, une question : laquelle est la plus rapide, la plus lourde, la plus ancienne… La partie s’arrête à la première erreur.',
     rounds: economyConfig.duelRounds,
     creditsPerWin: economyConfig.duelCreditsPerWin,
+    playsPerDay: economyConfig.gamesPerDay,
+    reward: 'credits',
+    endsOnMistake: true,
+    perfectBonus: true,
+    choices: 'ab',
   },
   QUIZ: {
     name: 'Quiz auto',
     description: 'Cinq questions à 4 choix : marque, pays, décennie ou modèle en photo. Chaque bonne réponse rapporte des crédits.',
     rounds: economyConfig.quizQuestions,
     creditsPerWin: economyConfig.quizCreditsPerWin,
+    playsPerDay: economyConfig.gamesPerDay,
+    reward: 'credits',
+    endsOnMistake: false,
+    perfectBonus: true,
+    choices: 4,
+  },
+  WEIGHT: {
+    name: 'Poids lourds',
+    description: 'Deux voitures s’affrontent sur la balance. Désignez la plus lourde et elle rejoint votre garage !',
+    rounds: 1,
+    creditsPerWin: 0,
+    playsPerDay: economyConfig.quickGamesPerDay,
+    reward: 'card',
+    endsOnMistake: true,
+    perfectBonus: false,
+    choices: 'ab',
+  },
+  MYSTERY: {
+    name: 'Question pour une carte',
+    description: 'Une carte, une question, quatre réponses. Plus la carte est rare, plus la question est pointue. Bonne réponse = carte gagnée.',
+    rounds: 1,
+    creditsPerWin: 0,
+    playsPerDay: economyConfig.quickGamesPerDay,
+    reward: 'card',
+    endsOnMistake: true,
+    perfectBonus: false,
+    choices: 4,
+  },
+  DOORS: {
+    name: 'Les 3 garages',
+    description: 'Trois portes fermées : un garage vide, une carte standard et une carte Épique ou Légendaire. À vous de choisir !',
+    rounds: 1,
+    creditsPerWin: 0,
+    playsPerDay: economyConfig.doorsPerDay,
+    reward: 'card',
+    endsOnMistake: true,
+    perfectBonus: false,
+    choices: 3,
   },
 };
 
@@ -69,11 +148,11 @@ export class GamesService {
       resetsAt: resetsAt.toISOString(),
       games: (Object.keys(GAMES) as GameType[]).map((type) => {
         const today = sessions.filter((s) => s.type === type);
+        const { choices: _choices, ...def } = GAMES[type];
         return {
           type,
-          ...GAMES[type],
-          playsPerDay: economyConfig.gamesPerDay,
-          playsLeft: Math.max(0, economyConfig.gamesPerDay - today.length),
+          ...def,
+          playsLeft: Math.max(0, def.playsPerDay - today.length),
           active: today.find((s) => s.status === 'ACTIVE')?.id ?? null,
           bestScore: best.find((b) => b.type === type)?._max.score ?? 0,
         };
@@ -93,7 +172,7 @@ export class GamesService {
         if (active) await tx.gameSession.update({ where: { id: active.id }, data: { status: 'FINISHED', finishedAt: now } });
 
         const playedToday = await tx.gameSession.count({ where: { userId, type, createdAt: { gte: this.dayStart(now) } } });
-        if (playedToday >= economyConfig.gamesPerDay) {
+        if (playedToday >= GAMES[type].playsPerDay) {
           throw new ConflictException('Plus de partie disponible aujourd’hui pour ce jeu : revenez demain !');
         }
 
@@ -127,39 +206,61 @@ export class GamesService {
         const round = state.current;
         if (!round) throw new ConflictException('Aucune question en cours');
 
-        const valid = session.type === 'DUEL' ? choice === 'a' || choice === 'b' : Number.isInteger(choice) && (choice as number) >= 0 && (choice as number) < 4;
+        const game = GAMES[session.type];
+        const valid =
+          game.choices === 'ab'
+            ? choice === 'a' || choice === 'b'
+            : Number.isInteger(choice) && (choice as number) >= 0 && (choice as number) < game.choices;
         if (!valid) throw new BadRequestException('Réponse invalide');
 
-        const correct = choice === round.answer;
-        const game = GAMES[session.type];
         await lockPlayers(tx, userId);
+
+        // Résultat de la manche
+        let correct: boolean;
+        let prizeCarId: number | null = null;
+        let jackpot = false;
+        if ('outcomes' in round) {
+          const door = round.outcomes[choice as number];
+          correct = door.tier !== 'none';
+          prizeCarId = door.carId;
+          jackpot = door.tier === 'top';
+        } else {
+          correct = choice === round.answer;
+          if (correct && game.reward === 'card') prizeCarId = round.prizeCarId ?? null;
+        }
+
         const gained = correct ? game.creditsPerWin : 0;
         if (gained) await moveCredits(tx, userId, gained, `game:${session.type.toLowerCase()}`, session.id);
 
+        let prize = null;
+        if (prizeCarId) {
+          const car = await tx.car.findUniqueOrThrow({ where: { id: prizeCarId } });
+          const { quantity, isNew } = await addCard(tx, userId, car.id);
+          prize = { ...toCardDto(car), quantity, isNew };
+          await tx.player.update({
+            where: { userId },
+            data: { gameCardsWon: { increment: 1 }, ...(jackpot ? { doorsJackpots: { increment: 1 } } : {}) },
+          });
+        }
+
         const score = session.score + (correct ? 1 : 0);
         const history = [...state.history, { correct }];
-        const lastRound = session.round >= game.rounds;
-        const ends = lastRound || (session.type === 'DUEL' && !correct);
+        const ends = session.round >= game.rounds || (game.endsOnMistake && !correct);
 
-        let next: Round | null = null;
-        if (!ends) {
-          next = await this.makeRound(tx, session.type, state.used);
-        }
+        const next = ends ? null : await this.makeRound(tx, session.type, state.used);
         const finished = ends || !next;
 
         let rewardCard = null;
-        let newAchievements: Awaited<ReturnType<AchievementsService['evaluate']>> = [];
-        if (finished && score >= game.rounds) {
+        if (finished && game.perfectBonus && score >= game.rounds) {
           // Sans-faute : une carte bonus (peu commune ou mieux).
           const car = await this.boosters.pickCar(tx, rollRarity(true), []);
           if (car) {
             const { quantity, isNew } = await addCard(tx, userId, car.id);
             rewardCard = { ...toCardDto(car), quantity, isNew };
+            await tx.player.update({ where: { userId }, data: { gameCardsWon: { increment: 1 } } });
           }
         }
-        if (finished) {
-          await tx.player.update({ where: { userId }, data: { gamesPlayed: { increment: 1 } } });
-        }
+        if (finished) await tx.player.update({ where: { userId }, data: { gamesPlayed: { increment: 1 } } });
 
         const updated = await tx.gameSession.update({
           where: { id },
@@ -169,7 +270,7 @@ export class GamesService {
             round: finished ? session.round : session.round + 1,
             status: finished ? 'FINISHED' : 'ACTIVE',
             finishedAt: finished ? new Date() : null,
-            rewardCarId: rewardCard?.id ?? null,
+            rewardCarId: rewardCard?.id ?? prize?.id ?? null,
             state: {
               used: next ? [...state.used, ...this.usedBy(next)] : state.used,
               current: next,
@@ -177,45 +278,92 @@ export class GamesService {
             } as unknown as Prisma.InputJsonValue,
           },
         });
-        if (finished) newAchievements = await this.achievements.evaluate(tx, userId);
+        const newAchievements = finished ? await this.achievements.evaluate(tx, userId) : [];
         const balance = (await tx.player.findUniqueOrThrow({ where: { userId }, select: { credits: true } })).credits;
 
         return {
           correct,
-          answer: round.answer,
+          answer: 'outcomes' in round ? null : round.answer,
           reveal: 'reveal' in round ? round.reveal : null,
+          doors: 'outcomes' in round ? await this.revealDoors(tx, round.outcomes) : null,
+          prize,
           gained,
           balance,
           session: this.view(updated),
-          summary: finished ? { score, credits: updated.credits, rewardCard, newAchievements } : null,
+          summary: finished ? { score, credits: updated.credits, rewardCard, prize, newAchievements } : null,
         };
       },
       { timeout: 15_000 },
     );
   }
 
-  private makeRound(tx: Tx, type: GameType, used: number[]): Promise<Round | null> {
-    return type === 'DUEL' ? makeDuelRound(tx, used) : makeQuizRound(tx, used);
+  private async makeRound(tx: Tx, type: GameType, used: number[]): Promise<Round | null> {
+    switch (type) {
+      case 'DUEL':
+        return makeDuelRound(tx, used);
+      case 'QUIZ':
+        return makeQuizRound(tx, used);
+      case 'WEIGHT':
+        return makeWeightRound(tx, used);
+      case 'MYSTERY':
+        return makeMysteryRound(tx, used);
+      case 'DOORS':
+        return this.makeDoorsRound(tx);
+    }
+  }
+
+  /** Trois portes : une vide, une carte standard (Commune / Peu commune), une haut de gamme (Épique / Légendaire). */
+  private async makeDoorsRound(tx: Tx): Promise<DoorsRound | null> {
+    const standard: Rarity = Math.random() < 0.7 ? 'COMMON' : 'UNCOMMON';
+    const top: Rarity = Math.random() < 0.8 ? 'EPIC' : 'LEGENDARY';
+    const s = await this.boosters.pickCar(tx, standard, []);
+    const t = await this.boosters.pickCar(tx, top, s ? [s.id] : []);
+    if (!s || !t) return null;
+    const outcomes: Door[] = [
+      { tier: 'none', carId: null },
+      { tier: 'standard', carId: s.id },
+      { tier: 'top', carId: t.id },
+    ];
+    for (let i = outcomes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [outcomes[i], outcomes[j]] = [outcomes[j], outcomes[i]];
+    }
+    return { kind: 'doors', prompt: 'Derrière quelle porte se cache la meilleure voiture ?', doors: 3, outcomes };
+  }
+
+  /** Contenu des trois portes, révélé après le choix. */
+  private async revealDoors(tx: Tx, outcomes: Door[]) {
+    const ids = outcomes.map((o) => o.carId).filter((v): v is number => v !== null);
+    const cars = await tx.car.findMany({ where: { id: { in: ids } } });
+    return outcomes.map((o) => ({ tier: o.tier, card: o.carId ? toCardDto(cars.find((c) => c.id === o.carId)!) : null }));
   }
 
   private usedBy(round: Round): number[] {
-    return 'carId' in round ? [round.carId] : [(round as DuelRound).a.id, (round as DuelRound).b.id];
+    if ('outcomes' in round) return [];
+    if ('carId' in round) return [round.carId];
+    const duel = round as DuelRound;
+    return [duel.a.id, duel.b.id];
   }
 
-  /** Vue d'une partie pour le client : la question en cours, sans la réponse. */
+  /** Vue d'une partie pour le client : la question en cours, sans la réponse ni le contenu des portes. */
   private view(session: GameSession) {
     const state = session.state as unknown as SessionState;
     const game = GAMES[session.type];
     let question = null;
     if (state.current && session.status === 'ACTIVE') {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { answer, reveal, carId, ...rest } = state.current as Round & { reveal?: unknown; carId?: number };
+      const { answer, reveal, carId, prizeCarId, outcomes, ...rest } = state.current as Round & {
+        reveal?: unknown;
+        carId?: number;
+        outcomes?: unknown;
+      };
       question = rest;
     }
     return {
       id: session.id,
       type: session.type,
       name: game.name,
+      reward: game.reward,
       status: session.status,
       round: session.round,
       total: game.rounds,

@@ -28,6 +28,7 @@ Ces scénarios ont été rejoués contre une vraie base PostgreSQL, en appelant 
 | 5 achats simultanés de la même offre en boutique | 1 succès, 4 refus, 1 seul débit au journal |
 | Question de mini-jeu envoyée au client | Ne contient pas la réponse |
 | Relance d'une partie en cours | La même partie est reprise |
+| Jeux rapides (Poids lourds, Question pour une carte, 3 garages) | Ni la réponse, ni la carte en jeu, ni le contenu des portes ne sont envoyés avant la réponse ; la carte gagnée est en collection ; limites de 5, 5 et 2 parties par jour respectées |
 | Réponse après la fin de partie / réponse invalide | 409 / 400 |
 | Mise en bourse | La carte quitte la collection (séquestre) ; impossible de la proposer deux fois |
 | Annulation / expiration d'une offre | La carte est rendue au vendeur |

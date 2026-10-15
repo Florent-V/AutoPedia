@@ -20,7 +20,7 @@ Les **crédits (🪙)** sont la monnaie du jeu. Le solde est affiché en permane
 
 ## Principes d'équilibre
 
-- **Création monétaire limitée** : les seules sources de crédits « neufs » sont le bonus de bienvenue et les mini-jeux, plafonnés par le nombre de parties par jour (525 crédits par jour au maximum). Les échanges de la bourse ne font que **déplacer** des crédits entre joueurs, sans en créer.
+- **Création monétaire limitée** : les seules sources de crédits « neufs » sont le bonus de bienvenue et les deux jeux à crédits, plafonnés par le nombre de parties par jour (525 crédits par jour au maximum). Les jeux rapides donnent des **cartes**, pas de crédits : ils n'alimentent pas l'inflation. Les échanges de la bourse ne font que **déplacer** des crédits entre joueurs, sans en créer.
 - **La boutique est le puits principal** : les crédits dépensés disparaissent. L'inflation reste ainsi contenue.
 - **Les prix suivent la rareté** : une Commune coûte 40 crédits (une partie de duel moyenne), une Légendaire 4 000 crédits (environ deux semaines de jeu assidu). La boutique permet de **cibler** une rareté sans court-circuiter les boosters.
 - **La boutique donne des repères de prix à la bourse** : quand un joueur crée une offre contre des crédits, le prix proposé par défaut est d'environ 75 % du prix boutique de la rareté (30, 90, 300, 900, 3 000). C'est cohérent : la bourse permet de choisir sa carte précise, la boutique non.
