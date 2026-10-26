@@ -115,3 +115,38 @@ Testé : deux acceptations simultanées donnent 200 et 409.
 ### Onglet « Pour moi »
 
 Requête : offres des autres joueurs dont la carte proposée **n'est pas** dans ma collection, **et** dont la carte demandée est dans ma collection **ou** dont le prix est inférieur ou égal à mon solde.
+
+## Enchères (`src/auctions/`)
+
+### Création
+
+Transaction : verrou vendeur, plafond `MAX_OPEN_AUCTIONS`, durée parmi `[1, 3, 6, 12, 24]` h, **séquestre** (`removeCard`), création avec `endsAt = maintenant + durée`.
+
+### Offre (`bid`)
+
+```
+transaction :
+  FOR UPDATE auction ; OPEN ; endsAt > maintenant
+  refus : vendeur, meilleur enchérisseur actuel, montant < minBid
+  minBid = currentBid ? currentBid + max(1, ⌈5 % × currentBid⌉) : startPrice
+  lockPlayers(enchérisseur, ancien meilleur enchérisseur)
+  moveCredits(enchérisseur, −montant, 'auction:bid')            ← crédits bloqués
+  moveCredits(ancien, +son montant, 'auction:refund')           ← remboursement immédiat
+  si endsAt − maintenant < 120 s → endsAt = maintenant + 120 s  ← anti « dernière seconde »
+  bid + mise à jour de l'enchère
+après : notification push « surenchéri » à l'ancien meilleur enchérisseur
+```
+
+### Règlement (`settleDue`, toutes les 30 s et 3 s après le démarrage)
+
+Pour chaque enchère OPEN échue, dans sa propre transaction et sous verrou : sans offre → `addCard(vendeur)` et UNSOLD ; avec offre → `addCard(acheteur)`, `moveCredits(vendeur, montant − commission, 'auction:sale')`, compteurs `auctionsWon` / `auctionsSold`, succès des deux joueurs, SOLD, puis notifications. La commission (`AUCTION_FEE_PERCENT`, 5 %) n'est versée à personne : elle sort de l'économie.
+
+Tests réalisés : offre trop basse (400), surenchère sur soi-même (409), remboursement exact du surenchéri, prolongation à 120 s, annulation refusée après une offre (409), règlement (carte au gagnant, 25 − 5 % = 24 crédits au vendeur), annulation sans offre.
+
+## Récompense quotidienne (`src/daily/`)
+
+`claim` : verrou joueur ; `today` et `yesterday` calculés dans `GAME_TIMEZONE` ; refus si `lastDailyClaim = today` ; `streak = lastDailyClaim = yesterday ? dailyStreak + 1 : 1` ; récompense `DAILY_REWARDS[(streak − 1) mod 7]`. Les boosters sont ajoutés après application de la régénération en cours, et peuvent dépasser le maximum (`computeBoosters` renvoie alors « plein » sans plafonner). La carte du jour 7 est tirée par `pickCar` (Épique, ou Légendaire à 20 %). Mise à jour de la série et de la meilleure série, puis évaluation des succès.
+
+## Récompenses des succès
+
+`AchievementsService.evaluate` insère chaque succès atteint avec `INSERT … ON CONFLICT DO NOTHING RETURNING`, et ne verse `TIER_REWARD[palier]` (`moveCredits`, motif `achievement`) que si la ligne a effectivement été insérée. Deux évaluations concurrentes (par exemple les deux joueurs d'un échange, ou une page Succès ouverte pendant une ouverture de booster) ne peuvent donc pas payer deux fois.

@@ -3,6 +3,7 @@ interface Offer {
   id: string;
   mine: boolean;
   seller: string;
+  sellerIsBot?: boolean;
   createdAt: string;
   expiresAt: string;
   price: number | null;
@@ -131,7 +132,10 @@ const timeLeft = (iso: string) => {
         <div class="trade__mid">
           <span class="trade__arrow">⇄</span>
           <div v-if="o.price !== null" class="trade__price">🪙 {{ formatNumber(o.price) }}</div>
-          <small class="muted">{{ o.mine ? 'Votre offre' : `par ${o.seller}` }}</small>
+          <small class="muted">
+            <template v-if="o.mine">Votre offre</template>
+            <template v-else>par {{ o.seller }}<BotBadge v-if="o.sellerIsBot" /></template>
+          </small>
           <small class="muted">expire dans {{ timeLeft(o.expiresAt) }}</small>
           <button v-if="o.mine" class="btn" :disabled="busy === o.id" @click="cancel(o)">Retirer</button>
           <button v-else class="btn btn-primary" :disabled="!o.canAccept || busy === o.id" @click="accept(o)">

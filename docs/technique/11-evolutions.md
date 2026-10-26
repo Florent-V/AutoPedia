@@ -5,6 +5,8 @@
 | Idée | Intérêt | Base existante |
 | --- | --- | --- |
 | **Amis** et échanges privés | Échanger entre proches, comparer les garages | `trade_offer` (ajouter un destinataire facultatif) |
+| **Achat immédiat** sur les enchères | Vendre vite à un prix garanti | `auction` (ajouter `buyNowPrice`) |
+| **Historique des prix** par carte | Aider à fixer ses prix | Tables `bid`, `trade_offer`, `shop_purchase` |
 | **Profil public** et classement | Émulation, partage | `computePlayerStats` |
 | **Recyclage des doublons** contre des crédits | Valoriser les doublons, nouveau puits/source | `removeCard` + `moveCredits` |
 | **Boosters thématiques** (par pays, par décennie, 100 % course) | Variété, événements | `pickCar` (ajouter des filtres) |

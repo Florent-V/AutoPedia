@@ -62,6 +62,9 @@ const owned = computed(() => (card.value?.quantity ?? 0) > 0);
               <NuxtLink :to="{ path: '/market', query: { tab: 'trades', sell: card.id } }" class="btn" @click="emit('close')">
                 🤝 Proposer à l’échange
               </NuxtLink>
+              <NuxtLink :to="{ path: '/market', query: { tab: 'auctions', sell: card.id } }" class="btn" @click="emit('close')">
+                🔨 Mettre aux enchères
+              </NuxtLink>
             </div>
           </template>
           <p v-else class="muted">Ouvrez des boosters pour obtenir cette carte et découvrir son histoire.</p>

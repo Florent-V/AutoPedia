@@ -32,6 +32,12 @@ export const economyConfig = {
   /** Durée de vie d'une offre de la bourse (jours) et nombre maximal d'offres ouvertes par joueur. */
   tradeDays: int('TRADE_DAYS', 7),
   maxOpenTrades: int('MAX_OPEN_TRADES', 10),
+  /** Enchères : commission prélevée sur la vente (puits de crédits), enchères ouvertes max par joueur, durées autorisées (h). */
+  auctionFeePercent: int('AUCTION_FEE_PERCENT', 5),
+  maxOpenAuctions: int('MAX_OPEN_AUCTIONS', 5),
+  auctionDurations: [1, 3, 6, 12, 24],
+  /** Une offre arrivant dans les N dernières secondes prolonge l'enchère d'autant (anti « dernière seconde »). */
+  auctionSnipeSeconds: 120,
   /** Garanties : un booster sur N contient au moins une Épique / une Légendaire. */
   pityEpic: int('PITY_EPIC', 10),
   pityLegendary: int('PITY_LEGENDARY', 60),

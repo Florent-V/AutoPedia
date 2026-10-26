@@ -33,6 +33,9 @@ model User {
   shopPurchases      ShopPurchase[]
   tradeOffers        TradeOffer[]        @relation("TradeSeller")
   tradePurchases     TradeOffer[]        @relation("TradeBuyer")
+  auctionsSelling    Auction[]           @relation("AuctionSeller")
+  auctionsLeading    Auction[]           @relation("AuctionBidder")
+  bids               Bid[]
 
   @@map("user")
 }
@@ -139,6 +142,7 @@ model Car {
   updatedAt        DateTime  @updatedAt
 
   owners    UserCard[]
+  auctions  Auction[]
   offeredIn TradeOffer[] @relation("TradeOffered")
   wantedIn  TradeOffer[] @relation("TradeWanted")
 
@@ -173,6 +177,17 @@ model Player {
   /// Cartes gagnées dans les mini-jeux / gros lots des 3 garages (succès).
   gameCardsWon       Int       @default(0)
   doorsJackpots      Int       @default(0)
+  /// Enchères gagnées / vendues (succès).
+  auctionsWon        Int       @default(0)
+  auctionsSold       Int       @default(0)
+  /// Récompense quotidienne : jours consécutifs en cours, meilleure série, dernier jour réclamé (AAAA-MM-JJ, fuseau du jeu).
+  dailyStreak        Int       @default(0)
+  bestStreak         Int       @default(0)
+  lastDailyClaim     String?
+  /// Joueur automatique (bot) qui anime le marché ; profil = personnalité (voir bots/bot-profiles.ts).
+  isBot              Boolean   @default(false)
+  botProfile         Json?
+  botNextActionAt    DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -329,4 +344,49 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscription")
+}
+
+enum AuctionStatus {
+  OPEN
+  SOLD
+  UNSOLD
+  CANCELLED
+}
+
+/// Enchère : la carte est mise sous séquestre ; les crédits de la meilleure offre sont bloqués jusqu'à la fin.
+model Auction {
+  id         String        @id @default(uuid())
+  sellerId   String
+  seller     User          @relation("AuctionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  carId      Int
+  car        Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
+  startPrice Int
+  /// Meilleure offre en cours (crédits déjà prélevés au meilleur enchérisseur).
+  currentBid Int?
+  bidderId   String?
+  bidder     User?         @relation("AuctionBidder", fields: [bidderId], references: [id], onDelete: SetNull)
+  bidCount   Int           @default(0)
+  status     AuctionStatus @default(OPEN)
+  endsAt     DateTime
+  createdAt  DateTime      @default(now())
+  closedAt   DateTime?
+  bids       Bid[]
+
+  @@index([status, endsAt])
+  @@index([sellerId, status])
+  @@index([bidderId, status])
+  @@map("auction")
+}
+
+model Bid {
+  id        String   @id @default(uuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@index([auctionId, createdAt])
+  @@map("bid")
 }

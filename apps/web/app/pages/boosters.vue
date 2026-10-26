@@ -64,6 +64,8 @@ function close() {
       </div>
     </div>
 
+    <DailyReward />
+
     <InstallCard />
 
     <section class="stock">

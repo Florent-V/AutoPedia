@@ -16,6 +16,7 @@ cd apps/web && npx nuxt typecheck
 | `game/zoned-time.spec.ts` | Début de journée et heure suivante à Paris, en heure d'été et d'hiver |
 | `shop/shop-rotation.spec.ts` | Stabilité dans l'heure, changement à l'heure suivante, aucune Commune répétée dans la journée, Légendaires sur 4 heures, une seule affaire par heure |
 | `catalog/media.spec.ts` | Extraction du nom de fichier Commons, nettoyage du HTML des auteurs |
+| `bots/bot-brain.spec.ts` | Valeur estimée (carte manquante, doublons, marque fétiche), jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
 
 ## Vérifications réalisées pendant le développement
 
@@ -36,6 +37,10 @@ Ces scénarios ont été rejoués contre une vraie base PostgreSQL, en appelant 
 | Achat sans crédits suffisants / offre d'une heure passée | 409 / 404 |
 | Notification « réserve pleine » | Envoyée une seule fois ; abonnement invalide supprimé |
 | `/api/media/../.env` | 403 |
+| Enchères | Offre minimale, refus de surenchérir sur soi-même, remboursement exact du surenchéri, prolongation à 2 min, annulation refusée après une offre, règlement (carte au gagnant, montant − 5 % au vendeur), annulation sans offre |
+| Récompense quotidienne | Jour 1 versé, 2ᵉ réclamation refusée (409), jour 7 = carte Épique + succès de série payés, boosters offerts au-delà de 10 |
+| Bots | 12 bots créés avec personnalités ; ils ouvrent leurs boosters, réclament leur récompense, enchérissent sur les ventes d'un joueur (deux Rares mises à prix 5 montées à 237 et 303), acceptent une offre de bourse, mettent leurs doublons en vente |
+| Écran Marché > Enchères, calendrier de récompenses, badges 🤖 (mobile) | Aucune erreur, aucun débordement |
 | Parcours mobile complet (inscription, booster, jeux, boutique, bourse à deux joueurs) | Aucune erreur, aucun débordement horizontal |
 | Simulation de 300 000 boosters | Probabilités conformes, garanties respectées (voir [Cartes et raretés](../fonctionnel/03-cartes-et-raretes.md)) |
 

@@ -5,7 +5,7 @@ La bourse est une **place de marché ouverte à tous les joueurs**. On y propose
 - **d'une carte précise** (« ma Mustang contre ta 2CV »), ou
 - **d'un montant de crédits** fixé par le vendeur.
 
-Pas besoin d'être amis : toute offre ouverte est visible et acceptable par n'importe quel joueur.
+Pas besoin d'être amis : toute offre ouverte est visible et acceptable par n'importe quel joueur. Au lancement, des [bots](13-bots.md) 🤖 publient et acceptent aussi des offres. Pour une carte très demandée, préférez les [enchères](11-encheres.md).
 
 ## Proposer une carte
 

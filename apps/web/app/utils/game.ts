@@ -73,6 +73,7 @@ export interface Achievement {
   goal: number;
   progress?: number;
   unlockedAt?: string | null;
+  reward?: number;
 }
 
 export interface OpenResult {
@@ -87,7 +88,10 @@ export function notifyAchievements(list: Achievement[] | undefined, delay = 0) {
   if (!list?.length) return;
   const { push } = useToasts();
   setTimeout(() => {
-    for (const a of list) push({ title: `Succès débloqué : ${a.name}`, message: a.description, icon: a.icon, tier: a.tier }, 7000);
+    for (const a of list) {
+      const reward = a.reward ? ` · +${a.reward} 🪙` : '';
+      push({ title: `Succès débloqué : ${a.name}`, message: `${a.description}${reward}`, icon: a.icon, tier: a.tier }, 7000);
+    }
   }, delay);
 }
 

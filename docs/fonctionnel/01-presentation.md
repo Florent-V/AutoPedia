@@ -28,9 +28,9 @@ Le jeu se joue en solo, mais l'économie (crédits, bourse) relie déjà les jou
 1. **Revenir régulièrement** : la réserve se remplit toute seule. Une notification prévient quand elle est pleine.
 2. **Ouvrir ses boosters** : c'est la source principale de cartes.
 3. **Jouer aux mini-jeux** : des jeux rapides pour gagner une carte en un geste, et des jeux de culture automobile pour gagner des crédits.
-4. **Dépenser ses crédits** à la boutique, dont le contenu tourne toutes les heures.
+4. **Dépenser ses crédits** à la boutique, dont le contenu tourne toutes les heures, ou aux **enchères**.
 5. **Échanger ses doublons** à la bourse contre des cartes manquantes ou des crédits.
-6. **Débloquer des succès**, à afficher dans sa vitrine de badges.
+6. **Débloquer des succès**, qui rapportent des crédits, et réclamer sa **récompense quotidienne** pour faire grandir sa série de jours consécutifs.
 
 ## Les écrans
 
@@ -38,11 +38,11 @@ Le jeu se joue en solo, mais l'économie (crédits, bourse) relie déjà les jou
 | --- | --- | --- |
 | Accueil | `/` | Présentation du jeu, inscription |
 | Connexion / Inscription | `/login`, `/register` | Email + mot de passe |
-| Boosters | `/boosters` (onglet 1) | Réserve, compte à rebours, garanties, ouverture |
+| Boosters | `/boosters` (onglet 1) | Récompense du jour, réserve, compte à rebours, garanties, ouverture |
 | Collection | `/collection` (onglet 2) | Toutes les cartes du catalogue, possédées ou non |
 | Jeux | `/games` (onglet 3) | Liste des mini-jeux et parties restantes |
 | Partie | `/games/:id` | Déroulé d'une partie |
-| Marché | `/market` (onglet 4) | Onglets Boutique et Bourse d'échanges |
+| Marché | `/market` (onglet 4) | Onglets Boutique, Enchères et Bourse d'échanges |
 | Profil | `/profile` (onglet 5) | Statistiques, crédits, vitrine de badges, réglages de l'application |
 | Succès | `/achievements` | Tous les succès, avec leur progression |
 
@@ -66,4 +66,7 @@ Sur téléphone, la navigation se fait par une **barre d'onglets en bas d'écran
 | Points de collection | Somme des points des cartes **différentes** possédées |
 | Crédits (🪙) | Monnaie du jeu, gagnée dans les mini-jeux et à la bourse |
 | Offre | Carte proposée à la bourse contre une autre carte ou des crédits |
+| Enchère | Carte vendue au meilleur enchérisseur à la fin d'une durée choisie |
+| Série | Nombre de jours consécutifs où la récompense quotidienne a été réclamée |
+| Bot 🤖 | Joueur automatique qui anime le marché au lancement |
 | Séquestre | Une carte proposée à la bourse est mise de côté jusqu'à l'échange ou l'annulation |

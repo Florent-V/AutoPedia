@@ -2,13 +2,16 @@ import type { StatKey } from '../player/player-stats';
 
 export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 
+/** Crédits versés automatiquement au déblocage d'un succès, selon son palier. */
+export const TIER_REWARD: Record<BadgeTier, number> = { bronze: 50, silver: 150, gold: 400, platinum: 1000 };
+
 export interface AchievementDef {
   id: string;
   name: string;
   description: string;
   icon: string;
   tier: BadgeTier;
-  category: 'Boosters' | 'Collection' | 'Rareté' | 'Exploration' | 'Score' | 'Mini-jeux' | 'Marché';
+  category: 'Boosters' | 'Collection' | 'Rareté' | 'Exploration' | 'Score' | 'Mini-jeux' | 'Marché' | 'Assiduité';
   stat: StatKey;
   goal: number;
 }
@@ -67,6 +70,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   def('trades-1', 'Marché', 'Poignée de main', 'Conclure un échange à la bourse', '🤝', 'bronze', 'tradesCompleted', 1),
   def('trades-10', 'Marché', 'Négociant', 'Conclure 10 échanges à la bourse', '📈', 'silver', 'tradesCompleted', 10),
   def('trades-50', 'Marché', 'Courtier', 'Conclure 50 échanges à la bourse', '💼', 'gold', 'tradesCompleted', 50),
+
+  def('auction-won-1', 'Marché', 'Adjugé !', 'Remporter une enchère', '🔨', 'bronze', 'auctionsWon', 1),
+  def('auction-won-10', 'Marché', 'Collectionneur averti', 'Remporter 10 enchères', '🏛️', 'gold', 'auctionsWon', 10),
+  def('auction-sold-5', 'Marché', 'Commissaire-priseur', 'Vendre 5 cartes aux enchères', '📣', 'silver', 'auctionsSold', 5),
+
+  def('streak-3', 'Assiduité', 'Bonne habitude', 'Se connecter 3 jours d’affilée', '📅', 'bronze', 'bestStreak', 3),
+  def('streak-7', 'Assiduité', 'Habitué du garage', 'Se connecter 7 jours d’affilée', '🗓️', 'silver', 'bestStreak', 7),
+  def('streak-30', 'Assiduité', 'Fidèle au poste', 'Se connecter 30 jours d’affilée', '🔥', 'platinum', 'bestStreak', 30),
 
   def('points-100', 'Score', 'Plein d’essence', 'Atteindre 100 points de collection', '⛽', 'bronze', 'points', 100),
   def('points-1000', 'Score', 'Pole position', 'Atteindre 1 000 points de collection', '🥇', 'silver', 'points', 1000),

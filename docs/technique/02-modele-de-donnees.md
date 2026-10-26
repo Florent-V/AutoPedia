@@ -14,6 +14,7 @@ user ─┬─< session, account            (Better Auth)
       ├─< game_session                 parties de mini-jeux
       ├─< shop_purchase                achats en boutique
       ├─< trade_offer (vendeur / acheteur) >── car (proposée / demandée)
+      ├─< auction (vendeur / meilleur enchérisseur) >── car ; auction ─< bid
       └─< push_subscription            appareils abonnés aux notifications
 ```
 
@@ -49,7 +50,9 @@ user ─┬─< session, account            (Better Auth)
 | `fullNotifiedAnchor` | Évite de notifier deux fois le même remplissage |
 | `sinceEpic`, `sinceLegendary` | Compteurs de garantie |
 | `credits`, `creditsEarned` | Solde et cumul gagné (hors bonus de bienvenue) |
-| `boostersOpened`, `cardsObtained`, `gamesPlayed`, `tradesCompleted`, `shopPurchases`, `gameCardsWon`, `doorsJackpots` | Compteurs pour les statistiques et les succès |
+| `boostersOpened`, `cardsObtained`, `gamesPlayed`, `tradesCompleted`, `shopPurchases`, `gameCardsWon`, `doorsJackpots`, `auctionsWon`, `auctionsSold` | Compteurs pour les statistiques et les succès |
+| `dailyStreak`, `bestStreak`, `lastDailyClaim` | Récompense quotidienne : série en cours, meilleure série, dernier jour réclamé (`AAAA-MM-JJ`, fuseau du jeu) |
+| `isBot`, `botProfile`, `botNextActionAt` | Bots : drapeau, personnalité (JSON), prochain passage |
 
 La ligne `player` est créée à la première requête du joueur (`upsert`), avec 10 boosters et 100 crédits.
 
@@ -65,6 +68,8 @@ La ligne `player` est créée à la première requête du joueur (`upsert`), ave
 - `game_session` : `type` (DUEL, QUIZ, WEIGHT, MYSTERY, DOORS), `status`, `round`, `score`, `credits`, `rewardCarId`, et `state` (JSON) qui contient la question en cours **avec sa réponse** (jamais renvoyée au client) et les cartes déjà utilisées.
 - `shop_purchase` : `offerKey` (unique par joueur, ce qui empêche le double achat), `carId`, `price`.
 - `trade_offer` : `offeredCarId`, `wantedCarId` **ou** `price`, `status` (OPEN, COMPLETED, CANCELLED), `buyerId`, `expiresAt`.
+- `auction` : `carId` (en séquestre), `startPrice`, `currentBid` et `bidderId` (meilleure offre, crédits déjà prélevés), `bidCount`, `status` (OPEN, SOLD, UNSOLD, CANCELLED), `endsAt` (repoussé par l'anti « dernière seconde »).
+- `bid` : historique de toutes les offres (`auctionId`, `userId`, `amount`).
 
 ### Notifications
 
@@ -79,6 +84,9 @@ La ligne `player` est créée à la première requête du joueur (`upsert`), ave
 | Chaque mouvement de crédits est journalisé | `moveCredits` est le seul point d'écriture de `credits` |
 | Une carte en bourse n'existe qu'une fois | Séquestre : retirée de `user_card` à la publication |
 | Une offre n'est acceptée qu'une fois | Verrou `FOR UPDATE` sur `trade_offer` + vérification du statut |
+| Les crédits d'une enchère ne sont jamais dépensés deux fois | Prélevés à l'offre, rendus au surenchéri dans la même transaction (verrou sur `auction` et sur les deux joueurs) |
+| Un succès ne paie qu'une fois | `INSERT … ON CONFLICT DO NOTHING RETURNING` : la récompense n'est versée que si la ligne a été insérée |
+| La récompense du jour n'est réclamée qu'une fois | Verrou joueur + comparaison de `lastDailyClaim` avec la date du jour |
 | Une offre de boutique n'est achetée qu'une fois par joueur | Contrainte d'unicité `(userId, offerKey)` |
 | Une manche de mini-jeu n'est jouée qu'une fois | Verrou `FOR UPDATE` sur `game_session` |
 | Pas d'interblocage entre deux joueurs | Verrous toujours pris dans l'ordre des identifiants (`lockPlayers`) |

@@ -2,6 +2,8 @@
 
 Toutes les routes sont préfixées par `/api`. Elles demandent une **session** (cookie Better Auth), sauf celles marquées « public ». Les erreurs suivent le format NestJS `{ statusCode, message, error }`, avec des messages en français prêts à afficher.
 
+Les succès renvoyés dans `newAchievements` contiennent leur `reward` (crédits versés).
+
 Codes courants : `400` entrée invalide · `401` non connecté · `403` interdit · `404` introuvable · `409` conflit de règle (plus de booster, crédits insuffisants, offre déjà prise…) · `503` catalogue vide.
 
 ## Authentification (Better Auth)
@@ -19,7 +21,7 @@ Codes courants : `400` entrée invalide · `401` non connecté · `403` interdit
 | --- | --- | --- |
 | GET | `/me` | `user`, `boosters { available, max, regenMs, nextAt, serverTime }`, `stats` (points, raretés, crédits, compteurs, taille du catalogue…), `pity { epicIn, legendaryIn }` |
 | GET | `/wallet` | `balance`, `earned`, `history[30]` (`label`, `amount`, `balance`, `createdAt`) |
-| GET | `/achievements` | `unlocked`, `total`, `achievements[]` avec `progress` et `unlockedAt` |
+| GET | `/achievements` | `unlocked`, `total`, `achievements[]` avec `progress`, `reward` et `unlockedAt` |
 
 ## Boosters
 
@@ -59,10 +61,26 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 
 | Méthode | Route | Rôle |
 | --- | --- | --- |
-| GET | `/trades` | `tab` (`all`/`forme`/`mine`), `search`, `rarity`, `page` → `offers[]` (`offered`, `wanted` ou `price`, `seller`, `expiresAt`, `mine`, `canAccept`), `balance`, `openLimit` |
+| GET | `/trades` | `tab` (`all`/`forme`/`mine`), `search`, `rarity`, `page` → `offers[]` (`offered`, `wanted` ou `price`, `seller`, `sellerIsBot`, `expiresAt`, `mine`, `canAccept`), `balance`, `openLimit` |
 | POST | `/trades` | `{ offeredCarId, wantedCarId }` ou `{ offeredCarId, price }` → `{ id }` (la carte part en séquestre) |
 | POST | `/trades/:id/accept` | → `card`, `balance`, `newAchievements`, `tradeId` |
 | POST | `/trades/:id/cancel` | Vendeur uniquement ; la carte est rendue |
+
+## Enchères
+
+| Méthode | Route | Rôle |
+| --- | --- | --- |
+| GET | `/auctions` | `tab` (`all`/`selling`/`bidding`), `search`, `rarity`, `page` → `auctions[]` (`card`, `startPrice`, `currentBid`, `minBid`, `bidCount`, `endsAt`, `seller { name, isBot }`, `bidder`, `mine`, `leading`), `balance`, `feePercent`, `durations`, `openLimit` |
+| POST | `/auctions` | `{ carId, startPrice, durationHours }` → `{ id }` (la carte part en séquestre) |
+| POST | `/auctions/:id/bid` | `{ amount }` → `currentBid`, `minBid`, `endsAt`, `balance`. `400` si sous le minimum, `409` si déjà meilleur enchérisseur ou enchère terminée |
+| POST | `/auctions/:id/cancel` | Vendeur uniquement, tant qu'il n'y a pas d'offre |
+
+## Récompense quotidienne
+
+| Méthode | Route | Rôle |
+| --- | --- | --- |
+| GET | `/daily` | `canClaim`, `streak`, `bestStreak`, `day` (1..7), `resetsAt`, `rewards[7]` |
+| POST | `/daily/claim` | → `day`, `streak`, `reward`, `card` (jour 7), `balance`, `boosters`, `newAchievements`. `409` si déjà réclamée aujourd'hui |
 
 ## Notifications push
 

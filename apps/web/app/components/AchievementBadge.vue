@@ -18,7 +18,8 @@ const pct = computed(() =>
         <span :style="{ width: `${pct}%` }" />
       </div>
       <small v-if="!unlocked" class="muted">{{ achievement.progress ?? 0 }} / {{ achievement.goal }}</small>
-      <small v-else class="badge__date">
+      <small v-if="achievement.reward" class="badge__reward">🪙 {{ unlocked ? 'Récompense reçue' : 'Récompense' }} : {{ achievement.reward }} crédits</small>
+      <small v-if="unlocked" class="badge__date">
         Débloqué le {{ new Date(achievement.unlockedAt!).toLocaleDateString('fr-FR') }}
       </small>
     </div>
@@ -92,6 +93,10 @@ const pct = computed(() =>
 
 .badge__text small {
   color: var(--muted);
+}
+
+.badge__reward {
+  color: var(--accent-2) !important;
 }
 
 .badge__date {

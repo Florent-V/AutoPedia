@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const route = useRoute();
 const router = useRouter();
-const tab = ref<'shop' | 'trades'>(route.query.tab === 'trades' || route.query.sell ? 'trades' : 'shop');
+const initial = route.query.tab === 'trades' || route.query.tab === 'auctions' ? route.query.tab : route.query.sell ? 'trades' : 'shop';
+const tab = ref<'shop' | 'auctions' | 'trades'>(initial);
 watch(tab, (t) => void router.replace({ query: { tab: t } }));
 const player = usePlayerState();
 </script>
@@ -11,17 +12,19 @@ const player = usePlayerState();
     <div class="page-head">
       <div>
         <h1>Marché</h1>
-        <p>Dépensez vos crédits à la boutique ou échangez vos doublons avec les autres joueurs.</p>
+        <p>Achetez à la boutique, enchérissez, ou échangez vos doublons avec les autres joueurs.</p>
       </div>
       <span class="chip">🪙 {{ formatNumber(player?.stats.credits ?? 0) }} crédits</span>
     </div>
 
     <div class="tabs" role="tablist">
       <button role="tab" :aria-selected="tab === 'shop'" :class="{ on: tab === 'shop' }" @click="tab = 'shop'">🛒 Boutique</button>
-      <button role="tab" :aria-selected="tab === 'trades'" :class="{ on: tab === 'trades' }" @click="tab = 'trades'">🤝 Bourse d’échanges</button>
+      <button role="tab" :aria-selected="tab === 'auctions'" :class="{ on: tab === 'auctions' }" @click="tab = 'auctions'">🔨 Enchères</button>
+      <button role="tab" :aria-selected="tab === 'trades'" :class="{ on: tab === 'trades' }" @click="tab = 'trades'">🤝 Bourse</button>
     </div>
 
     <MarketShopTab v-if="tab === 'shop'" />
+    <MarketAuctionsTab v-else-if="tab === 'auctions'" />
     <MarketTradesTab v-else />
   </div>
 </template>
@@ -29,7 +32,7 @@ const player = usePlayerState();
 <style scoped>
 .tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 5px;
   margin-bottom: 20px;

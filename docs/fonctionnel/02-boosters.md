@@ -13,6 +13,8 @@ Dans l'en-tête et sur la page Boosters, le joueur voit :
 - le temps restant avant le prochain booster, avec une barre de progression, ou « réserve pleine » ;
 - les **garanties** en cours (« Épique garantie dans 4 boosters », « Légendaire garantie dans 37 »).
 
+La **récompense quotidienne** offre aussi des boosters (1, 2 ou 3 selon le jour), qui s'ajoutent à la réserve **même au-delà de 10**. Voir [Récompenses](12-recompenses.md).
+
 Une **notification** (si le joueur l'a activée) prévient quand la réserve vient d'être remplie. Une seule notification est envoyée par remplissage, et aucune toutes les 30 minutes.
 
 ## Ouverture

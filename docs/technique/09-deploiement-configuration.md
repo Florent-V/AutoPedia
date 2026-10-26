@@ -65,6 +65,17 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `DOORS_PER_DAY` | 2 | Parties par jour des 3 garages |
 | `TRADE_DAYS`, `MAX_OPEN_TRADES` | 7, 10 | Bourse |
 | `SHOP_SECRET` | dérivé de `BETTER_AUTH_SECRET` | Graine du programme de la boutique |
+| `AUCTION_FEE_PERCENT` | 5 | Commission prélevée sur les ventes aux enchères |
+| `MAX_OPEN_AUCTIONS` | 5 | Enchères en cours par joueur |
+
+### Bots
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `BOTS_ENABLED` | `true` | Active les bots |
+| `BOTS_COUNT` | 12 | Nombre de bots (16 au maximum) |
+| `BOTS_START_CREDITS` | 1500 | Crédits de départ d'un bot |
+| `BOTS_TICK_SECONDS` | 60 | Fréquence de la boucle des bots |
 
 ### Catalogue et médias
 
@@ -101,4 +112,4 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 
 ## Limites d'une instance unique
 
-Les tâches de fond (notifications, rapatriement des médias, expiration des offres) tournent dans le processus de l'API. Avec **plusieurs instances** de l'API, les verrous et les mises à jour conditionnelles empêchent les doublons sur les données. Les tâches seraient en revanche exécutées par chaque instance. Voir [Évolutions](11-evolutions.md).
+Les tâches de fond (notifications, rapatriement des médias, expiration des offres, règlement des enchères, bots) tournent dans le processus de l'API. Avec **plusieurs instances** de l'API, les verrous et les mises à jour conditionnelles empêchent les doublons sur les données. Les tâches seraient en revanche exécutées par chaque instance. Voir [Évolutions](11-evolutions.md).

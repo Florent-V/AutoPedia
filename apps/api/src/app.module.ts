@@ -24,6 +24,11 @@ import { ShopService } from './shop/shop.service';
 import { TradesController } from './trades/trades.controller';
 import { TradesService } from './trades/trades.service';
 import { WalletController } from './economy/wallet.controller';
+import { AuctionsController } from './auctions/auctions.controller';
+import { AuctionsService } from './auctions/auctions.service';
+import { DailyController } from './daily/daily.controller';
+import { DailyService } from './daily/daily.service';
+import { BotsService } from './bots/bots.service';
 
 @Module({
   imports: [PrismaModule, AuthModule],
@@ -40,7 +45,9 @@ import { WalletController } from './economy/wallet.controller';
     ShopController,
     TradesController,
     WalletController,
+    AuctionsController,
+    DailyController,
   ],
-  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, MediaService, PushService, GamesService, ShopService, TradesService],
+  providers: [PlayerService, BoostersService, CollectionService, CarsService, AchievementsService, CatalogService, MediaService, PushService, GamesService, ShopService, TradesService, AuctionsService, DailyService, BotsService],
 })
 export class AppModule {}
