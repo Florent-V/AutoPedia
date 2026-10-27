@@ -8,11 +8,10 @@ import { CarsService } from './cars/cars.service';
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogService } from './catalog/catalog.service';
 import { MediaService } from './catalog/media.service';
-import { GamesController } from './games/games.controller';
-import { GamesService } from './games/games.service';
 import { HealthController } from './health.controller';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CollectionModule } from './modules/collection/collection.module';
+import { GamesModule } from './modules/games/games.module';
 import { PlayerModule } from './modules/player/player.module';
 import { ProgressionModule } from './modules/progression/progression.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
@@ -35,17 +34,17 @@ import { TradesService } from './trades/trades.service';
     CollectionModule,
     StatisticsModule,
     ProgressionModule,
+    GamesModule,
   ],
   controllers: [
     HealthController,
     CarsController,
     CatalogController,
     PushController,
-    GamesController,
     ShopController,
     TradesController,
     AuctionsController,
   ],
-  providers: [CarsService, CatalogService, MediaService, PushService, GamesService, ShopService, TradesService, AuctionsService, BotsService],
+  providers: [CarsService, CatalogService, MediaService, PushService, ShopService, TradesService, AuctionsService, BotsService],
 })
 export class AppModule {}

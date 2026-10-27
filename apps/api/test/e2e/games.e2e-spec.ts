@@ -99,4 +99,23 @@ describe('Mini-jeux', () => {
     }
     await p.agent.post('/api/games/DUEL/start').expect(409);
   });
+
+  it('un sans-faute au quiz rapporte une carte bonus tirée par le serveur', async () => {
+    const p = await newPlayer();
+    const { body } = await p.agent.post('/api/games/QUIZ/start').expect(200);
+    let last;
+    for (let round = 1; round <= 5; round++) {
+      const current = await currentRound(body.id);
+      last = await p.agent.post(`/api/games/sessions/${body.id}/answer`).send({ choice: current.answer }).expect(200);
+    }
+    expect(last!.body.summary.score).toBe(5);
+    const bonus = last!.body.summary.rewardCard;
+    expect(bonus).toBeTruthy();
+    expect(bonus.rarity).not.toBe('COMMON');
+    expect((await db.userCard.findUnique({ where: { userId_carId: { userId: p.id, carId: bonus.id } } }))?.quantity).toBeGreaterThan(0);
+    expect(Array.isArray(last!.body.newAchievements)).toBe(true);
+    const player = await db.player.findUniqueOrThrow({ where: { userId: p.id } });
+    expect(player.gamesPlayed).toBe(1);
+    expect(player.gameCardsWon).toBe(1);
+  });
 });

@@ -43,7 +43,7 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | 1 | Socle partagé : transactions (CLS), événements de domaine, erreurs métier, durcissement HTTP | ✅ |
 | 2 | Contextes `wallet`, `collection`, `player` et `statistics` | ✅ |
 | 3 | Contexte `progression` (succès par événements, récompense quotidienne) | ✅ |
-| 4 | Contexte `games` | ⏳ |
+| 4 | Contexte `games` (agrégat `GameSession`, port `QuestionFactory`, aléatoire cryptographique) | ✅ |
 | 5 | Contexte `marketplace` | ⏳ |
 | 6 | Contextes `catalog`, `notifications` et `bots`, nettoyage final | ⏳ |
 
@@ -80,7 +80,7 @@ POST /api/boosters/open                               (aucun paramètre accepté
 
 ## Pont de migration
 
-Les services pas encore migrés (`games`, `shop`, `trades`, `auctions`, `bots`) passent par `legacyTransaction()`. Ils s'exécutent ainsi dans l'unité de travail et partagent leur transaction avec les nouveaux services qu'ils appellent. Sans ce pont, deux connexions se disputeraient le verrou du joueur. Le pont disparaît avec la dernière étape.
+Les services pas encore migrés (`shop`, `trades`, `auctions`, `bots`) passent par `legacyTransaction()`. Ils s'exécutent ainsi dans l'unité de travail et partagent leur transaction avec les nouveaux services qu'ils appellent. Sans ce pont, deux connexions se disputeraient le verrou du joueur. Le pont disparaît avec la dernière étape.
 
 ## Tests de bout en bout
 

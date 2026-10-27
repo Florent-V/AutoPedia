@@ -1,17 +1,52 @@
-import { Car, Prisma, Rarity } from '@prisma/client';
-import { rollRarity } from '../modules/catalog/domain/rarity';
-import { imageUrlOf } from '../modules/catalog/application/card-view';
+import { Injectable } from '@nestjs/common';
+import { Car, Prisma } from '@prisma/client';
+import { RandomSource } from '../../../shared/application/ports';
+import { Random, shuffle as shuffleWith } from '../../../shared/domain/random';
+import { Db } from '../../../shared/infrastructure/prisma/transaction';
+import { imageUrlOf } from '../../catalog/application/card-view';
+import { effectiveRarity, Rarity, rollRarity } from '../../catalog/domain/rarity';
+import { GameType } from '../domain/game-rules';
+import { QuestionFactory } from '../domain/ports';
+import { DoorsRound, DuelRound, DuelStatKey, GameCard, MysteryRound, QuizRound, Round } from '../domain/rounds';
 
 type Tx = Prisma.TransactionClient;
 
+/** Questions tirées du catalogue en SQL. Tout l'aléatoire passe par `random` (cryptographique en production). */
+@Injectable()
+export class SqlQuestionFactory extends QuestionFactory {
+  constructor(
+    private readonly db: Db,
+    private readonly randomSource: RandomSource,
+  ) {
+    super();
+  }
+
+  make(type: GameType, used: number[]): Promise<Round | null> {
+    const tx = this.db.tx;
+    const random: Random = () => this.randomSource.next();
+    switch (type) {
+      case 'DUEL':
+        return makeDuelRound(tx, used, random);
+      case 'QUIZ':
+        return makeQuizRound(tx, used, random);
+      case 'WEIGHT':
+        return makeWeightRound(tx, used, random);
+      case 'MYSTERY':
+        return makeMysteryRound(tx, used, random);
+      case 'DOORS':
+        return makeDoorsRound(tx, random);
+    }
+  }
+}
+
 /** Carte réduite envoyée pendant un jeu : jamais les valeurs qui donneraient la réponse. */
-export function gameCard(car: Car) {
+export function gameCard(car: Car): GameCard {
   return {
     id: car.id,
     name: car.name,
     manufacturer: car.manufacturer,
     imageUrl: imageUrlOf(car),
-    rarity: car.rarityOverride ?? car.rarity,
+    rarity: effectiveRarity(car),
   };
 }
 
@@ -20,7 +55,7 @@ export function gameCard(car: Car) {
 // ---------------------------------------------------------------------------
 
 export interface DuelStat {
-  key: 'topSpeedKmh' | 'massKg' | 'lengthMm' | 'powerKw' | 'yearStart' | 'popularity';
+  key: DuelStatKey;
   question: string;
   /** La bonne réponse est la plus grande valeur (sinon la plus petite). */
   higher: boolean;
@@ -47,17 +82,8 @@ export const DUEL_STATS: DuelStat[] = [
   },
 ];
 
-export interface DuelRound {
-  stat: DuelStat['key'];
-  question: string;
-  a: ReturnType<typeof gameCard>;
-  b: ReturnType<typeof gameCard>;
-  answer: 'a' | 'b';
-  reveal: { a: string; b: string };
-}
-
-export async function makeDuelRound(tx: Tx, used: number[]): Promise<DuelRound | null> {
-  const stats = [...DUEL_STATS].sort(() => Math.random() - 0.5);
+export async function makeDuelRound(tx: Tx, used: number[], random: Random): Promise<DuelRound | null> {
+  const stats = shuffleWith(DUEL_STATS, random);
   for (const stat of stats) {
     const col = Prisma.raw(`"${stat.key}"`);
     const rows = await tx.$queryRaw<Array<{ id: number; v: number }>>`
@@ -90,26 +116,6 @@ export async function makeDuelRound(tx: Tx, used: number[]): Promise<DuelRound |
 // Quiz auto (4 choix)
 // ---------------------------------------------------------------------------
 
-export type QuizKind = 'brand' | 'country' | 'decade' | 'photo';
-
-export interface QuizRound {
-  kind: QuizKind;
-  prompt: string;
-  car: { name: string | null; imageUrl: string | null };
-  choices: string[];
-  answer: number;
-  carId: number;
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
 async function randomCar(tx: Tx, where: Prisma.Sql, used: number[]): Promise<Car | null> {
   const rows = await tx.$queryRaw<Array<{ id: number }>>`
     SELECT "id" FROM "car" WHERE "active" = true AND ${where} AND NOT ("id" = ANY(${used}::int[]))
@@ -125,9 +131,17 @@ async function distinctValues(tx: Tx, column: 'manufacturer' | 'country', exclud
   return rows.map((r) => r.v);
 }
 
-function build(kind: QuizKind, prompt: string, car: Car, correct: string, others: string[], showName = true): QuizRound | null {
+function build(
+  kind: QuizRound['kind'],
+  prompt: string,
+  car: Car,
+  correct: string,
+  others: string[],
+  random: Random,
+  showName = true,
+): QuizRound | null {
   if (others.length < 3) return null;
-  const choices = shuffle([correct, ...others.slice(0, 3)]);
+  const choices = shuffleWith([correct, ...others.slice(0, 3)], random);
   return {
     kind,
     prompt,
@@ -138,13 +152,13 @@ function build(kind: QuizKind, prompt: string, car: Car, correct: string, others
   };
 }
 
-export async function makeQuizRound(tx: Tx, used: number[]): Promise<QuizRound | null> {
-  const kinds = shuffle<QuizKind>(['brand', 'country', 'decade', 'photo']);
+export async function makeQuizRound(tx: Tx, used: number[], random: Random): Promise<QuizRound | null> {
+  const kinds = shuffleWith<QuizRound['kind']>(['brand', 'country', 'decade', 'photo'], random);
   for (const kind of kinds) {
     if (kind === 'brand') {
       const car = await randomCar(tx, Prisma.sql`"manufacturer" IS NOT NULL`, used);
       if (!car) continue;
-      const q = build('brand', `Quelle marque produit la « ${car.name} » ?`, car, car.manufacturer!, await distinctValues(tx, 'manufacturer', car.manufacturer!, 3));
+      const q = build('brand', `Quelle marque produit la « ${car.name} » ?`, car, car.manufacturer!, await distinctValues(tx, 'manufacturer', car.manufacturer!, 3), random);
       // Trop facile si le nom contient la marque : on le masque alors.
       if (q && car.name.toLowerCase().includes(car.manufacturer!.toLowerCase())) {
         q.prompt = 'Quelle marque a produit cette voiture ?';
@@ -156,7 +170,7 @@ export async function makeQuizRound(tx: Tx, used: number[]): Promise<QuizRound |
     if (kind === 'country') {
       const car = await randomCar(tx, Prisma.sql`"country" IS NOT NULL`, used);
       if (!car) continue;
-      const q = build('country', `De quel pays vient la « ${car.name} » ?`, car, car.country!, await distinctValues(tx, 'country', car.country!, 3));
+      const q = build('country', `De quel pays vient la « ${car.name} » ?`, car, car.country!, await distinctValues(tx, 'country', car.country!, 3), random);
       if (q) return q;
     }
     if (kind === 'decade') {
@@ -164,8 +178,8 @@ export async function makeQuizRound(tx: Tx, used: number[]): Promise<QuizRound |
       if (!car) continue;
       const decade = Math.floor(car.yearStart! / 10) * 10;
       const candidates = [-30, -20, -10, 10, 20, 30].map((d) => decade + d).filter((d) => d >= 1880 && d <= 2030);
-      const others = shuffle(candidates).slice(0, 3);
-      const q = build('decade', `En quelle décennie la « ${car.name} » est-elle sortie ?`, car, `Années ${decade}`, others.map((d) => `Années ${d}`));
+      const others = shuffleWith(candidates, random).slice(0, 3);
+      const q = build('decade', `En quelle décennie la « ${car.name} » est-elle sortie ?`, car, `Années ${decade}`, others.map((d) => `Années ${d}`), random);
       if (q) {
         // Décennies présentées dans l'ordre chronologique.
         const correct = q.choices[q.answer];
@@ -180,7 +194,7 @@ export async function makeQuizRound(tx: Tx, used: number[]): Promise<QuizRound |
       const rows = await tx.$queryRaw<Array<{ name: string }>>`
         SELECT "name" FROM "car" WHERE "active" = true AND "id" <> ${car.id} AND "name" <> ${car.name}
         ORDER BY ("manufacturer" IS NOT DISTINCT FROM ${car.manufacturer}) DESC, random() LIMIT 3`;
-      const q = build('photo', 'Quel est ce modèle ?', car, car.name, rows.map((r) => r.name), false);
+      const q = build('photo', 'Quel est ce modèle ?', car, car.name, rows.map((r) => r.name), random, false);
       if (q) return q;
     }
   }
@@ -201,22 +215,17 @@ async function randomCarOf(tx: Tx, rarity: Rarity | null, where: Prisma.Sql, use
   return rows.length ? tx.car.findUnique({ where: { id: rows[0].id } }) : null;
 }
 
-export interface WeightRound extends DuelRound {
-  /** Carte remportée en cas de bonne réponse : la plus lourde (ou la gagnante du critère de repli). */
-  prizeCarId: number;
-}
-
 /**
  * Poids lourds : deux voitures dont la rareté est tirée comme dans un booster, la plus lourde est à gagner.
  * Si le catalogue manque de masses connues, on se rabat sur un autre critère du duel.
  */
-export async function makeWeightRound(tx: Tx, used: number[]): Promise<WeightRound | null> {
+export async function makeWeightRound(tx: Tx, used: number[], random: Random): Promise<DuelRound | null> {
   const mass = DUEL_STATS.find((s) => s.key === 'massKg')!;
   const hasMass = Prisma.sql`"massKg" IS NOT NULL AND "massKg" > 0`;
   for (let attempt = 0; attempt < 6; attempt++) {
-    const a = await randomCarOf(tx, attempt < 4 ? rollRarity(false) : null, hasMass, used);
+    const a = await randomCarOf(tx, attempt < 4 ? rollRarity(false, random) : null, hasMass, used);
     if (!a) continue;
-    const b = await randomCarOf(tx, attempt < 4 ? rollRarity(false) : null, hasMass, [...used, a.id]);
+    const b = await randomCarOf(tx, attempt < 4 ? rollRarity(false, random) : null, hasMass, [...used, a.id]);
     if (!b || !mass.minGap(a.massKg!, b.massKg!)) continue;
     const aWins = a.massKg! > b.massKg!;
     return {
@@ -229,19 +238,9 @@ export async function makeWeightRound(tx: Tx, used: number[]): Promise<WeightRou
       prizeCarId: aWins ? a.id : b.id,
     };
   }
-  const fallback = await makeDuelRound(tx, used);
+  const fallback = await makeDuelRound(tx, used, random);
   if (!fallback) return null;
   return { ...fallback, prizeCarId: fallback.answer === 'a' ? fallback.a.id : fallback.b.id };
-}
-
-export interface MysteryRound {
-  kind: 'country' | 'decade' | 'year';
-  prompt: string;
-  card: ReturnType<typeof gameCard>;
-  choices: string[];
-  answer: number;
-  carId: number;
-  prizeCarId: number;
 }
 
 /**
@@ -250,8 +249,8 @@ export interface MysteryRound {
  *  - Rare : la décennie (4 décennies consécutives)
  *  - Épique / Légendaire : l'année exacte (4 années proches)
  */
-export async function makeMysteryRound(tx: Tx, used: number[]): Promise<MysteryRound | null> {
-  const rarity = rollRarity(false);
+export async function makeMysteryRound(tx: Tx, used: number[], random: Random): Promise<MysteryRound | null> {
+  const rarity = rollRarity(false, random);
   const wanted: MysteryRound['kind'] = rarity === 'RARE' ? 'decade' : rarity === 'EPIC' || rarity === 'LEGENDARY' ? 'year' : 'country';
   const order: MysteryRound['kind'][] = wanted === 'country' ? ['country', 'decade'] : [wanted, 'decade', 'country'];
 
@@ -266,18 +265,18 @@ export async function makeMysteryRound(tx: Tx, used: number[]): Promise<MysteryR
       const others = await distinctValues(tx, 'country', car.country!, 3);
       if (others.length < 3) continue;
       correct = car.country!;
-      choices = shuffle([correct, ...others]);
+      choices = shuffleWith([correct, ...others], random);
     } else if (kind === 'decade') {
       const decade = Math.floor(car.yearStart! / 10) * 10;
       // 4 décennies consécutives, la bonne à une position aléatoire, bornées à 1880–2020.
-      let first = decade - 10 * Math.floor(Math.random() * 4);
+      let first = decade - 10 * Math.floor(random() * 4);
       first = Math.min(Math.max(first, 1880), 2020 - 30);
       choices = [0, 1, 2, 3].map((i) => `Années ${first + i * 10}`);
       correct = `Années ${decade}`;
       if (!choices.includes(correct)) continue;
     } else {
       const y = car.yearStart!;
-      const pool = shuffle([-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6].map((d) => y + d).filter((v) => v <= new Date().getFullYear()));
+      const pool = shuffleWith([-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6].map((d) => y + d).filter((v) => v <= new Date().getFullYear()), random);
       correct = String(y);
       choices = [correct, ...pool.slice(0, 3).map(String)].sort();
     }
@@ -286,4 +285,22 @@ export async function makeMysteryRound(tx: Tx, used: number[]): Promise<MysteryR
     return { kind, prompt, card: gameCard(car), choices, answer: choices.indexOf(correct), carId: car.id, prizeCarId: car.id };
   }
   return null;
+}
+
+/** Trois portes : une vide, une carte standard (Commune / Peu commune), une haut de gamme (Épique / Légendaire). */
+async function makeDoorsRound(tx: Tx, random: Random): Promise<DoorsRound | null> {
+  const any = Prisma.sql`true`;
+  const s = (await randomCarOf(tx, random() < 0.7 ? 'COMMON' : 'UNCOMMON', any, [])) ?? (await randomCarOf(tx, null, any, []));
+  const top: Rarity = random() < 0.8 ? 'EPIC' : 'LEGENDARY';
+  const t = s && ((await randomCarOf(tx, top, any, [s.id])) ?? (await randomCarOf(tx, top === 'EPIC' ? 'LEGENDARY' : 'EPIC', any, [s.id])));
+  if (!s || !t) return null;
+  const outcomes = shuffleWith<DoorsRound['outcomes'][number]>(
+    [
+      { tier: 'none', carId: null },
+      { tier: 'standard', carId: s.id },
+      { tier: 'top', carId: t.id },
+    ],
+    random,
+  );
+  return { kind: 'doors', prompt: 'Derrière quelle porte se cache la meilleure voiture ?', doors: 3, outcomes };
 }

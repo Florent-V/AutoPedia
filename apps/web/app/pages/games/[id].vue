@@ -55,8 +55,9 @@ interface AnswerResult {
     credits: number;
     rewardCard: Card | null;
     prize: Card | null;
-    newAchievements: Achievement[];
   } | null;
+  /** Succès débloqués par cette réponse. */
+  newAchievements: Achievement[];
 }
 
 const route = useRoute();
@@ -101,7 +102,7 @@ async function answer(choice: 'a' | 'b' | number) {
     }
     const top = res.prize && (res.prize.rarity === 'EPIC' || res.prize.rarity === 'LEGENDARY');
     haptic(top ? [40, 60, 40, 60, 120] : res.correct ? 20 : [40, 40, 40]);
-    if (res.summary) notifyAchievements(res.summary.newAchievements, 900);
+    notifyAchievements(res.newAchievements, res.summary ? 900 : 300);
   } catch (err) {
     error.value = apiErrorMessage(err);
   } finally {
