@@ -4,7 +4,7 @@ Règles du jeu vues par le joueur : [Bots](../fonctionnel/13-bots.md). Ce docume
 
 ## Principe
 
-Les bots sont des **joueurs ordinaires** : une ligne `user`, sans ligne `account`, donc sans moyen de se connecter, et une ligne `player` avec `isBot = true`, une personnalité (`botProfile`, JSON) et une heure de prochain passage (`botNextActionAt`). Pour agir, ils appellent **les mêmes cas d'usage que l'API** (`BoostersService`, `DailyRewardService`, `AuctionsService`, `TradesService`). Toutes les règles s'appliquent donc à l'identique : verrous, séquestre, limites, commission, succès et récompenses. Aucune règle n'existe « pour les bots » côté économie, sauf leur dotation de départ (`bot:dotation`) et leur revenu quotidien simulé (`bot:jeux`), tous deux inscrits au journal des crédits via le portefeuille.
+Les bots sont des **joueurs ordinaires** : une ligne `user`, sans ligne `account`, donc sans moyen de se connecter, et une ligne `player` avec `isBot = true`, une personnalité (`botProfile`, JSON) et une heure de prochain passage (`botNextActionAt`). Pour agir, ils appellent **les mêmes cas d'usage que l'API** (`BoostersService`, `DailyRewardService`, `AuctionsService`, `TradesService`). Toutes les règles s'appliquent donc à l'identique : verrous, séquestre, limites, commission, succès et récompenses. Aucune règle n'existe « pour les bots » côté économie, sauf leur dotation de départ (`bot:dotation`) et leur revenu quotidien simulé (`bot:jeux`), tous deux inscrits au journal des crédits via le portefeuille. Ils sont aussi dispensés des conditions d'accès au marché (ancienneté du compte, boosters ouverts), puisqu'ils sont pilotés par le serveur ; les prix planchers et l'écart de rareté des échanges s'appliquent à eux comme aux joueurs.
 
 ## Fichiers
 

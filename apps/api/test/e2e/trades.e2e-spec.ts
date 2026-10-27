@@ -1,9 +1,9 @@
-import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, quantityOf, setCredits, statuses, waitFor } from '../helpers';
+import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, newTrader, quantityOf, setCredits, statuses, waitFor } from '../helpers';
 
 describe('Bourse d’échanges', () => {
   it('met la carte en séquestre et la vend contre des crédits', async () => {
-    const seller = await newPlayer();
-    const buyer = await newPlayer();
+    const seller = await newTrader();
+    const buyer = await newTrader();
     const car = await carOfRarity('RARE');
     await giveCard(seller.id, car.id);
 
@@ -22,9 +22,9 @@ describe('Bourse d’échanges', () => {
   });
 
   it('une seule acceptation passe en cas de double clic', async () => {
-    const seller = await newPlayer();
-    const b1 = await newPlayer();
-    const b2 = await newPlayer();
+    const seller = await newTrader();
+    const b1 = await newTrader();
+    const b2 = await newTrader();
     const car = await carOfRarity('COMMON');
     await giveCard(seller.id, car.id);
     const { body } = await seller.agent.post('/api/trades').send({ offeredCarId: car.id, price: 10 }).expect(201);
@@ -39,8 +39,8 @@ describe('Bourse d’échanges', () => {
   });
 
   it('échange carte contre carte, seulement si l’acheteur possède la carte demandée', async () => {
-    const a = await newPlayer();
-    const b = await newPlayer();
+    const a = await newTrader();
+    const b = await newTrader();
     const offered = await carOfRarity('UNCOMMON');
     const wanted = await carOfRarity('UNCOMMON', 1);
     await giveCard(a.id, offered.id);
@@ -54,7 +54,7 @@ describe('Bourse d’échanges', () => {
   });
 
   it('valide les contreparties', async () => {
-    const p = await newPlayer();
+    const p = await newTrader();
     const car = await carOfRarity('COMMON', 2);
     await giveCard(p.id, car.id);
     for (const payload of [
@@ -77,8 +77,8 @@ describe('Bourse d’échanges', () => {
   });
 
   it('rend la carte à l’annulation, et seul le vendeur peut annuler', async () => {
-    const seller = await newPlayer();
-    const other = await newPlayer();
+    const seller = await newTrader();
+    const other = await newTrader();
     const car = await carOfRarity('COMMON', 4);
     await giveCard(seller.id, car.id);
     const { body } = await seller.agent.post('/api/trades').send({ offeredCarId: car.id, price: 10 }).expect(201);
@@ -90,8 +90,8 @@ describe('Bourse d’échanges', () => {
   });
 
   it('refuse une offre expirée et rend la carte à l’expiration', async () => {
-    const seller = await newPlayer();
-    const buyer = await newPlayer();
+    const seller = await newTrader();
+    const buyer = await newTrader();
     const car = await carOfRarity('COMMON', 5);
     await giveCard(seller.id, car.id);
     const { body } = await seller.agent.post('/api/trades').send({ offeredCarId: car.id, price: 10 }).expect(201);

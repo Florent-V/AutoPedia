@@ -73,4 +73,12 @@ describe('Sécurité HTTP', () => {
       .send({ source: 'seed', limit: 10_000_000 })
       .expect(400);
   });
+
+  it('refuse les actions envoyées depuis un autre site (CSRF)', async () => {
+    const p = await newPlayer();
+    await p.agent.post('/api/boosters/open').set('Origin', 'https://site-pirate.example').expect(403);
+    await p.agent.post('/api/daily/claim').set('Sec-Fetch-Site', 'cross-site').expect(403);
+    const me = await p.agent.get('/api/me').expect(200);
+    expect(me.body.boosters.available).toBe(10);
+  });
 });

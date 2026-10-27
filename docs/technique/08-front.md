@@ -18,7 +18,7 @@
 | Succès | `pages/achievements.vue` | Groupés par catégorie |
 | Jeux | `pages/games/index.vue` | Parties restantes, remise à zéro |
 | Partie | `pages/games/[id].vue` | Les 5 jeux : paires (Duel, Poids lourds), choix (Quiz, Question pour une carte), portes de garage animées (3 garages) ; repli sur le dessin technique si une image ne charge pas |
-| Marché | `pages/market.vue` | Onglets `MarketShopTab` et `MarketTradesTab` |
+| Marché | `pages/market.vue` | Onglets `MarketShopTab`, `MarketAuctionsTab` et `MarketTradesTab`. Un bandeau 🔒 explique pourquoi un compte n'a pas encore accès à la bourse et aux enchères, et les formulaires de vente affichent le prix minimal de la rareté (valeurs envoyées par le serveur, qui les vérifie de toute façon) |
 | Profil | `pages/profile.vue` | Statistiques, crédits, vitrine de badges, réglages de l'application |
 
 Le middleware `middleware/auth.global.ts` charge la session, redirige vers `/login` (en conservant la page demandée) et précharge `/me`.
@@ -33,7 +33,7 @@ Le middleware `middleware/auth.global.ts` charge la session, redirige vers `/log
 | `BoosterPack` | Paquet aluminium : bande déchirable, reflet animé, logo |
 | `BoosterOpening` / `MobileReveal` / `FlipCard` | Séquence d'ouverture ; sur mobile, une carte à la fois (toucher, glisser, vibration) |
 | `CardModal` | Fiche détaillée, crédits photo, « Proposer à l'échange » |
-| `market/ShopTab`, `TradesTab`, `TradeCreate`, `CardPicker` | Marché |
+| `market/ShopTab`, `TradesTab`, `TradeCreate`, `AuctionsTab`, `AuctionCreate`, `CardPicker` | Marché |
 | `AppHeader`, `BottomNav`, `BoosterCounter` | Navigation (barre d'onglets à 5 entrées sur mobile) |
 | `ToastHost` | Notifications à l'écran (en haut sur mobile, en bas à droite sur ordinateur) |
 | `InstallCard`, `AppSettings` | Installation de la PWA et notifications |

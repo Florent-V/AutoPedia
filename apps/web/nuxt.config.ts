@@ -37,5 +37,17 @@ export default defineNuxtConfig({
       ],
     },
   },
+  // En-têtes de sécurité du site : pas d'affichage dans un cadre (clickjacking), pas de détection de type.
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      },
+    },
+  },
   typescript: { strict: true },
 });

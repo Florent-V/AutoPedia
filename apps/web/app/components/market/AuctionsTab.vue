@@ -24,6 +24,7 @@ interface Page {
   feePercent: number;
   durations: number[];
   openLimit: number;
+  market: { canTrade: boolean; reason: string | null; priceFloor: Record<Rarity, number>; maxSwapRarityGap: number };
   auctions: AuctionItem[];
 }
 
@@ -118,6 +119,7 @@ const left = (a: AuctionItem) => Math.max(0, new Date(a.endsAt).getTime() - now.
 
 <template>
   <div>
+    <p v-if="data && !data.market.canTrade" class="market-lock">🔒 {{ data.market.reason }}</p>
     <div class="head">
       <div class="subtabs">
         <button :class="{ on: tab === 'all' }" @click="tab = 'all'">En cours</button>
@@ -179,6 +181,7 @@ const left = (a: AuctionItem) => Math.max(0, new Date(a.endsAt).getTime() - now.
       :initial-card-id="sellCardId"
       :durations="data.durations"
       :fee-percent="data.feePercent"
+      :price-floor="data.market.priceFloor"
       @close="creating = false"
       @created="onCreated"
     />
@@ -328,5 +331,15 @@ const left = (a: AuctionItem) => Math.max(0, new Date(a.endsAt).getTime() - now.
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+.market-lock {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 196, 0, 0.1);
+  border: 1px solid rgba(255, 196, 0, 0.35);
+  color: #ffd76a;
+  font-size: 0.9rem;
 }
 </style>

@@ -7,6 +7,7 @@ import { mkdirSync } from 'node:fs';
 import { AUTH, Auth } from './modules/identity/infrastructure/better-auth';
 import { MEDIA_DIR } from './modules/catalog/application/media-sync.service';
 import { DomainErrorFilter } from './shared/http/domain-error.filter';
+import { originCheck } from './shared/http/origin-check';
 
 /** Configuration HTTP commune au serveur et aux tests de bout en bout. */
 export function configureApp(app: NestExpressApplication) {
@@ -18,6 +19,12 @@ export function configureApp(app: NestExpressApplication) {
       contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
       crossOriginResourcePolicy: { policy: 'same-site' },
     }),
+  );
+
+  const origins = (process.env.WEB_ORIGIN ?? 'http://localhost:3000').split(',').map((o) => o.trim()).filter(Boolean);
+  // Actions des joueurs : uniquement depuis le site (Better Auth applique sa propre vérification sur /api/auth).
+  app.use('/api', (req: express.Request, res: express.Response, next: express.NextFunction) =>
+    req.path.startsWith('/auth/') ? next() : originCheck(origins)(req, res, next),
   );
 
   // Le corps des requêtes Better Auth doit rester brut : on active le parseur JSON après le montage du handler.
@@ -45,7 +52,7 @@ export function configureApp(app: NestExpressApplication) {
   );
   app.useGlobalFilters(new DomainErrorFilter());
   app.enableCors({
-    origin: (process.env.WEB_ORIGIN ?? 'http://localhost:3000').split(','),
+    origin: origins,
     credentials: true,
   });
   app.enableShutdownHooks();

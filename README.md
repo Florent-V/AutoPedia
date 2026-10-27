@@ -28,6 +28,8 @@ Ouvrir ensuite http://localhost:3000. Le catalogue s'importe automatiquement au 
 
 ## Documentation
 
+Version lisible dans un navigateur, avec schémas : ouvrir [`docs/index.html`](docs/index.html) (régénération : `node docs/build-html.mjs`).
+
 La documentation complète est dans [`docs/`](docs/README.md) :
 
 - **Fonctionnelle** : [parcours joueur](docs/fonctionnel/01-presentation.md), [boosters](docs/fonctionnel/02-boosters.md), [cartes et raretés](docs/fonctionnel/03-cartes-et-raretes.md), [collection](docs/fonctionnel/04-collection.md), [succès](docs/fonctionnel/05-succes-et-badges.md), [mini-jeux](docs/fonctionnel/06-mini-jeux.md), [crédits](docs/fonctionnel/07-credits-et-economie.md), [boutique](docs/fonctionnel/08-boutique.md), [bourse](docs/fonctionnel/09-bourse-echanges.md), [application mobile](docs/fonctionnel/10-application-mobile.md), [enchères](docs/fonctionnel/11-encheres.md), [récompenses](docs/fonctionnel/12-recompenses.md), [bots](docs/fonctionnel/13-bots.md)

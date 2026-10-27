@@ -30,6 +30,22 @@ Une **notification** (si le joueur l'a activée) prévient quand la réserve vie
 
 Les cartes reçues sont ajoutées à la collection. Un doublon augmente simplement le nombre d'exemplaires (×2, ×3…).
 
+```mermaid
+sequenceDiagram
+  actor J as Joueur
+  participant S as Serveur
+  J->>S: « Ouvrir un booster » (aucun paramètre)
+  S->>S: recalcule la réserve avec l'heure du serveur
+  alt réserve vide
+    S-->>J: refus « Aucun booster disponible »
+  else au moins 1 booster
+    S->>S: tire les 5 raretés (garanties incluses)<br/>puis 5 cartes différentes
+    S->>S: ajoute les cartes à la collection,<br/>met à jour la réserve et les compteurs
+    S->>S: vérifie les succès débloqués
+    S-->>J: 5 cartes, réserve, succès
+  end
+```
+
 ## Contenu d'un booster
 
 | Emplacement | Raretés possibles |

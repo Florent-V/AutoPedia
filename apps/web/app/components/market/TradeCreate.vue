@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Création d'une offre de bourse : une de mes cartes contre des crédits ou contre une carte précise. */
-const props = defineProps<{ initialCardId?: number | null }>();
+const props = defineProps<{ initialCardId?: number | null; priceFloor?: Record<Rarity, number> }>();
 const emit = defineEmits<{ close: []; created: [] }>();
 
 const SUGGESTED: Record<Rarity, number> = { COMMON: 30, UNCOMMON: 90, RARE: 300, EPIC: 900, LEGENDARY: 3000 };
@@ -47,7 +47,9 @@ async function submit() {
   }
 }
 
-const valid = computed(() => !!offered.value && (mode.value === 'credits' ? price.value >= 1 : !!wanted.value));
+/** Prix minimal imposé par le serveur pour la rareté de la carte proposée. */
+const floor = computed(() => (offered.value && props.priceFloor?.[offered.value.rarity]) || 1);
+const valid = computed(() => !!offered.value && (mode.value === 'credits' ? price.value >= floor.value : !!wanted.value));
 </script>
 
 <template>
@@ -78,7 +80,8 @@ const valid = computed(() => !!offered.value && (mode.value === 'credits' ? pric
           </div>
           <label v-if="mode === 'credits'" class="field">
             <span class="muted">Prix demandé</span>
-            <input v-model.number="price" class="input" type="number" min="1" max="1000000" inputmode="numeric" />
+            <input v-model.number="price" class="input" type="number" :min="floor" max="1000000" inputmode="numeric" />
+            <small v-if="floor > 1" class="muted">Minimum : {{ floor }} 🪙</small>
           </label>
           <button v-else class="create__pick" @click="picking = 'wanted'">
             <CarCard v-if="wanted" :card="wanted" size="sm" :interactive="false" />

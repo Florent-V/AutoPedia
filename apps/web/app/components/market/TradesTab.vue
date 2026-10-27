@@ -17,6 +17,7 @@ interface Page {
   total: number;
   balance: number;
   openLimit: number;
+  market: { canTrade: boolean; reason: string | null; priceFloor: Record<Rarity, number>; maxSwapRarityGap: number };
   offers: Offer[];
 }
 
@@ -102,6 +103,7 @@ const timeLeft = (iso: string) => {
 
 <template>
   <div>
+    <p v-if="data && !data.market.canTrade" class="market-lock">🔒 {{ data.market.reason }}</p>
     <div class="trades-head">
       <div class="subtabs">
         <button :class="{ on: tab === 'all' }" @click="tab = 'all'">Toutes</button>
@@ -154,7 +156,7 @@ const timeLeft = (iso: string) => {
       <button class="btn" @click="load(data.page + 1)">Voir plus</button>
     </div>
 
-    <MarketTradeCreate v-if="creating" :initial-card-id="sellCardId" @close="creating = false" @created="onCreated" />
+    <MarketTradeCreate v-if="creating" :initial-card-id="sellCardId" :price-floor="data?.market.priceFloor" @close="creating = false" @created="onCreated" />
     <CardModal v-if="selected !== null" :card-id="selected" @close="selected = null" />
   </div>
 </template>
@@ -296,5 +298,15 @@ const timeLeft = (iso: string) => {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+.market-lock {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 196, 0, 0.1);
+  border: 1px solid rgba(255, 196, 0, 0.35);
+  color: #ffd76a;
+  font-size: 0.9rem;
 }
 </style>

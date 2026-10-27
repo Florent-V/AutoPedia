@@ -7,13 +7,14 @@ import { MarketJobs } from './application/market-jobs';
 import { MarketQueries } from './application/market.queries';
 import { ShopService } from './application/shop.service';
 import { TradesService } from './application/trades.service';
-import { AuctionRepository, MarketCounters, ShopCatalog, ShopPurchaseRepository, TradeOfferRepository } from './domain/ports';
+import { AuctionRepository, MarketCounters, ShopCatalog, ShopPurchaseRepository, TraderProfiles, TradeOfferRepository } from './domain/ports';
 import { AuctionsController, ShopController, TradesController } from './http/market.controllers';
 import {
   CatalogShopCatalog,
   PrismaAuctionRepository,
   PrismaMarketCounters,
   PrismaShopPurchaseRepository,
+  PrismaTraderProfiles,
   PrismaTradeOfferRepository,
 } from './infrastructure/prisma-marketplace.repositories';
 
@@ -32,6 +33,7 @@ import {
     { provide: ShopPurchaseRepository, useClass: PrismaShopPurchaseRepository },
     { provide: ShopCatalog, useClass: CatalogShopCatalog },
     { provide: MarketCounters, useClass: PrismaMarketCounters },
+    { provide: TraderProfiles, useClass: PrismaTraderProfiles },
   ],
   exports: [TradesService, AuctionsService, MarketQueries],
 })

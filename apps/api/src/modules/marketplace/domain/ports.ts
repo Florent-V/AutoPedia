@@ -1,5 +1,6 @@
 import { Rarity } from '../../catalog/domain/rarity';
 import { Auction } from './auction';
+import { TraderProfile } from './market-policy';
 import { TradeOffer } from './trade-offer';
 
 export abstract class TradeOfferRepository {
@@ -35,4 +36,9 @@ export abstract class ShopCatalog {
 /** Compteurs du joueur liés au marché (statistiques et succès). */
 export abstract class MarketCounters {
   abstract add(userId: string, counters: { shopPurchases?: number; tradesCompleted?: number; auctionsWon?: number; auctionsSold?: number }): Promise<void>;
+}
+
+/** Ancienneté et activité d'un joueur (garde-fous contre les comptes multiples). */
+export abstract class TraderProfiles {
+  abstract get(userId: string): Promise<TraderProfile>;
 }

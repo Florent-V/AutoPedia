@@ -5,7 +5,16 @@ Cette page décrit l'architecture de `apps/api` : contextes métier, couches, r�
 ## Principes
 
 - **Un module NestJS par contexte métier** (*bounded context*). Un module n'expose que ses cas d'usage et ses ports, jamais ses repositories Prisma.
-- **Quatre couches par contexte** :
+- **Quatre couches par contexte**, les dépendances allant toujours vers le domaine :
+
+```mermaid
+flowchart LR
+  H["http/<br/>contrôleurs, DTO"] --> A["application/<br/>cas d'usage, requêtes"]
+  A --> D["domain/<br/>agrégats, règles, ports"]
+  I["infrastructure/<br/>Prisma, Wikimedia, Web Push"] -- implémente les ports --> D
+  A -. "via les ports" .-> I
+```
+
 
 | Dossier | Contenu | Dépend de |
 | --- | --- | --- |
@@ -35,6 +44,53 @@ Cette page décrit l'architecture de `apps/api` : contextes métier, couches, r�
 | `catalog` | Cartes, raretés, import Wikidata, photos, résumés, santé, administration | `CatalogReader`, raretés |
 | `notifications` | Web Push | abonné aux événements |
 | `bots` | Joueurs automatiques | consommateurs des cas d'usage |
+
+### Dépendances entre contextes
+
+Un contexte n'utilise un autre qu'à travers ses services exportés. Une flèche signifie « utilise ». `identity` (sessions) est utilisé partout par le garde global. `player` et `bots` utilisent aussi `wallet`, `catalog` et `statistics`.
+
+```mermaid
+flowchart LR
+  subgraph Entrées
+    player["player<br/>/me, fiche"]
+    bots["bots"]
+  end
+  subgraph Cœur["Contextes de jeu"]
+    games["games"]
+    marketplace["marketplace"]
+    progression["progression"]
+    collection["collection"]
+  end
+  subgraph Socle["Contextes de base"]
+    wallet["wallet"]
+    catalog["catalog"]
+    statistics["statistics"]
+  end
+  notifications["notifications"]
+  player --> collection
+  player --> progression
+  bots --> marketplace
+  bots --> progression
+  games --> wallet
+  games --> collection
+  marketplace --> wallet
+  marketplace --> collection
+  progression --> wallet
+  progression --> collection
+  collection --> catalog
+  collection --> statistics
+  notifications --> catalog
+```
+
+Les réactions passent par des **événements** : le contexte qui publie ne connaît pas ceux qui écoutent.
+
+```mermaid
+flowchart LR
+  collection -- "BoosterOpened" --> progression
+  games -- "GameRoundPlayed" --> progression
+  marketplace -- "ShopCardPurchased<br/>TradeCompleted<br/>AuctionSettled" --> progression
+  marketplace -. "TradeCompleted · AuctionOutbid · AuctionSettled<br/>(après validation)" .-> notifications
+```
 
 ## Avancement
 
@@ -67,10 +123,12 @@ Tous les contrôles sont faits **côté serveur**. Une requête modifiée à la 
 | Vendre une carte non possédée, ou deux fois | Séquestre par décrément conditionnel (`CardsService.take`) | `infrastructure/` |
 | Dépenser plus que son solde | `Wallet.debit` (409), sous verrou, avec contrôle optimiste à l'écriture | `domain/` + `infrastructure/` |
 | Accepter sa propre offre, une offre expirée, ou deux fois | `TradeOffer.accept` sous verrou | `domain/` |
+| Transférer cartes ou crédits depuis des comptes jetables | `MarketPolicy` : compte de plus de 24 h ayant ouvert 3 boosters, prix plancher par rareté, échanges entre raretés proches | `domain/` |
 | Surenchérir sous le minimum, sur soi-même, ou après la fin | `Auction.bid` sous verrou | `domain/` |
 | Réclamer deux fois la récompense du jour, ou fausser la série | `DailyStreak.claim` : dates calculées par l'horloge du serveur | `domain/` |
 | Toucher deux fois la récompense d'un succès | `INSERT … ON CONFLICT DO NOTHING RETURNING` avant le paiement | `application/` |
 | Rafales de requêtes | Limitation de débit par joueur (429) | `http/` (global) |
+| Faire agir le joueur depuis un autre site (CSRF) | Contrôle de l'en-tête `Origin` / `Sec-Fetch-Site` sur toutes les actions (403) | `http/` (global) |
 | Faire appeler une adresse interne par le serveur (push) | Liste des services de notification autorisés | `domain/` |
 
 ## Socle partagé (`src/shared/`)
@@ -104,6 +162,22 @@ POST /api/boosters/open                               (aucun paramètre accepté
   NewAchievementsInterceptor    http/          ajoute newAchievements à la réponse
 ```
 
+### Événements de domaine
+
+```mermaid
+sequenceDiagram
+  participant U as Cas d'usage
+  participant B as EventBus
+  participant P as Progression (dans la transaction)
+  participant N as Notifications (après validation)
+  U->>B: publish(TradeCompleted)
+  B->>P: @OnDomainEvent : évalue les succès,<br/>verse les récompenses (même transaction)
+  P-->>B: ok (une erreur annulerait tout)
+  U->>U: fin du travail
+  Note over U: COMMIT
+  B->>N: @AfterCommit : notification push au vendeur
+```
+
 ## Verrous et ordre de verrouillage
 
 - **Joueur** (`PlayerLocks`, ligne `player` en `FOR UPDATE`) : pris par toute action qui modifie le solde, la réserve ou les cartes d'un joueur. Plusieurs joueurs sont toujours verrouillés triés par identifiant.
@@ -125,11 +199,12 @@ cd apps/api && npm run test:e2e
 
 | Fichier | Scénarios |
 | --- | --- |
-| `security` | 401 sans session, routes publiques, chemins de fichiers, jeton d'administration, identifiants mal formés |
+| `security` | 401 sans session, routes publiques, chemins de fichiers, jeton d'administration, identifiants mal formés, champs non prévus, pagination bornée, en-têtes de sécurité, actions envoyées depuis un autre site (CSRF) |
 | `boosters` | Réserve de départ, 12 ouvertures simultanées pour 9 boosters, garantie Épique côté serveur, paramètres de tirage envoyés par le client sans effet |
 | `games` | Aucune réponse divulguée, gains exacts, reprise de partie, réponses hors format, partie d'un autre joueur, cartes gagnées, limites quotidiennes |
 | `shop` | Achat en rafale (1 seul débit), crédits insuffisants, offre inventée, prix envoyé par le client sans effet |
 | `trades` | Séquestre, double acceptation, échange carte contre carte, validation des contreparties, annulation, expiration |
+| `market-guards` | Compte trop récent refusé (vendre, acheter, enchérir), prix plancher, échange trop déséquilibré |
 | `auctions` | Crédits bloqués, remboursement, minimum de surenchère, anti « dernière seconde », règlement, invendu, validation, deux offres simultanées |
 | `daily` | Une réclamation par jour même en rafale, carte du 7ᵉ jour, série remise à 1 |
 | `progression` | Succès signalés dans la réponse et payés une seule fois (rafales d'ouvertures et de consultations), journal du portefeuille |

@@ -6,6 +6,10 @@ import { economyConfig } from '../../../config';
 import { toCardDto } from '../../catalog/application/card-view';
 import { minBid } from '../domain/auction';
 import { SHOP_RULES } from '../domain/shop-rotation';
+import { DomainError } from '../../../shared/domain/errors';
+import { assertCanTrade } from '../domain/market-policy';
+import { TraderProfiles } from '../domain/ports';
+import { marketPolicy } from './market.config';
 import { ShopService } from './shop.service';
 
 export interface MarketListQuery<Tab extends string> {
@@ -23,7 +27,20 @@ export class MarketQueries {
   constructor(
     private readonly prisma: PrismaService,
     private readonly shopService: ShopService,
+    private readonly traders: TraderProfiles,
   ) {}
+
+  /** Accès du joueur au marché et prix planchers (affichés par le client ; vérifiés à chaque action). */
+  private async marketAccess(userId: string) {
+    let reason: string | null = null;
+    try {
+      assertCanTrade(await this.traders.get(userId), new Date(), marketPolicy);
+    } catch (err) {
+      if (!(err instanceof DomainError)) throw err;
+      reason = err.message;
+    }
+    return { canTrade: reason === null, reason, priceFloor: marketPolicy.priceFloor, maxSwapRarityGap: marketPolicy.maxSwapRarityGap };
+  }
 
   async shop(userId: string) {
     const player = await this.prisma.player.findUniqueOrThrow({ where: { userId } });
@@ -108,6 +125,7 @@ export class MarketQueries {
       total,
       balance: player.credits,
       openLimit: economyConfig.maxOpenTrades,
+      market: await this.marketAccess(userId),
       offers: offers.map((o) => ({
         id: o.id,
         mine: o.sellerId === userId,
@@ -167,6 +185,7 @@ export class MarketQueries {
       feePercent: economyConfig.auctionFeePercent,
       durations: economyConfig.auctionDurations,
       openLimit: economyConfig.maxOpenAuctions,
+      market: await this.marketAccess(userId),
       auctions: auctions.map((a) => ({
         id: a.id,
         card: { ...toCardDto(a.car), quantity: qty.get(a.carId) ?? 0 },

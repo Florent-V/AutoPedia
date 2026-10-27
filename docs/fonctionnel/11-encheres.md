@@ -34,6 +34,41 @@ La clôture est automatique (vérification toutes les 30 secondes) :
 
 La commission de 5 % est un **puits de crédits** : elle sort de l'économie et limite l'inflation, comme les achats en boutique.
 
+## Vie d'une enchère
+
+```mermaid
+stateDiagram-v2
+  [*] --> EnCours: mise aux enchères<br/>(carte mise de côté)
+  EnCours --> EnCours: nouvelle offre<br/>(crédits bloqués, précédent remboursé,<br/>prolongée si < 2 min)
+  EnCours --> Annulée: annulation sans aucune offre<br/>(carte rendue)
+  EnCours --> Vendue: échéance avec au moins une offre<br/>(carte à l'acheteur, prix − 5 % au vendeur)
+  EnCours --> Invendue: échéance sans offre<br/>(carte rendue)
+  Annulée --> [*]
+  Vendue --> [*]
+  Invendue --> [*]
+```
+
+```mermaid
+sequenceDiagram
+  actor A as Alice
+  actor B as Bruno
+  participant S as Serveur
+  A->>S: offre 60 🪙
+  S->>S: 60 ≥ minimum ? solde suffisant ?
+  S-->>A: meilleure offre (60 🪙 bloqués)
+  B->>S: offre 63 🪙 (minimum = 60 + 5 %)
+  S->>S: bloque 63 🪙 chez Bruno
+  S->>A: rembourse 60 🪙 + notification « surenchérie »
+  S-->>B: meilleure offre
+  Note over S: à l'échéance : carte à Bruno,<br/>63 − 3 = 60 🪙 au vendeur
+```
+
+## Garde-fous
+
+- Mêmes règles d'accès que la bourse : compte de plus de **24 heures** ayant ouvert au moins **3 boosters**, pour vendre comme pour enchérir.
+- **Mise à prix minimale** selon la rareté (5, 15, 50, 150, 500 crédits).
+- Montants entiers, entre la mise à prix ou l'offre minimale et 10 000 000 ; jamais au-delà de son solde.
+
 ## Affichage
 
 Chaque enchère montre la carte (avec « Vous ne l'avez pas » si elle manque à la collection), le **compte à rebours** (en rouge dans les 5 dernières minutes), le prix actuel et le nombre d'offres, le meilleur enchérisseur et le vendeur. Les **bots** sont signalés par 🤖. La liste se met à jour toutes les 15 secondes pour voir arriver les nouvelles offres.

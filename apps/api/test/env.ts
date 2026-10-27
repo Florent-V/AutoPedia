@@ -59,5 +59,8 @@ export function serverEnv(databaseUrl: string): NodeJS.ProcessEnv {
     VAPID_PUBLIC_KEY: '',
     VAPID_PRIVATE_KEY: '',
     ADMIN_TOKEN: 'e2e-admin-token-0123456789',
+    MARKET_MIN_ACCOUNT_HOURS: '24',
+    MARKET_MIN_BOOSTERS: '3',
+    TRADE_MAX_RARITY_GAP: '1',
   };
 }

@@ -67,6 +67,9 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `SHOP_SECRET` | dérivé de `BETTER_AUTH_SECRET` | Graine du programme de la boutique |
 | `AUCTION_FEE_PERCENT` | 5 | Commission prélevée sur les ventes aux enchères |
 | `MAX_OPEN_AUCTIONS` | 5 | Enchères en cours par joueur |
+| `MARKET_MIN_ACCOUNT_HOURS` | 24 | Ancienneté minimale d'un compte pour la bourse et les enchères (anti comptes multiples) |
+| `MARKET_MIN_BOOSTERS` | 3 | Boosters ouverts au minimum pour la bourse et les enchères |
+| `TRADE_MAX_RARITY_GAP` | 1 | Écart de rareté maximal d'un échange carte contre carte |
 
 ### Bots
 
@@ -107,6 +110,7 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `VAPID_SUBJECT` | `mailto:contact@example.com` | Contact Web Push |
 | `PUSH_CHECK_SECONDS` | 60 | Fréquence de vérification des réserves pleines |
 | `ADMIN_TOKEN` | — | Jeton des routes `/api/admin/*` (16 caractères minimum) |
+| `PUSH_ALLOWED_HOSTS` | services Google, Mozilla, Apple, Microsoft | Services de notification autorisés (un nom commençant par `.` autorise ses sous-domaines) |
 
 ## Exploitation
 

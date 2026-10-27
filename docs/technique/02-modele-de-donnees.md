@@ -4,19 +4,156 @@ Le schéma complet, commenté, se trouve dans `apps/api/prisma/schema.prisma`. L
 
 ## Schéma
 
+### Vue d'ensemble
+
+```mermaid
+erDiagram
+  user ||--|| player : "état de jeu"
+  user ||--o{ session : ""
+  user ||--o{ account : ""
+  user ||--o{ user_card : "possède"
+  car ||--o{ user_card : ""
+  user ||--o{ credit_transaction : "journal"
+  user ||--o{ booster_opening : ""
+  user ||--o{ user_achievement : ""
+  user ||--o{ game_session : ""
+  user ||--o{ shop_purchase : ""
+  user ||--o{ trade_offer : "vend / achète"
+  car ||--o{ trade_offer : "proposée / demandée"
+  user ||--o{ auction : "vend / mène"
+  car ||--o{ auction : ""
+  auction ||--o{ bid : ""
+  user ||--o{ push_subscription : ""
 ```
-user ─┬─< session, account            (Better Auth)
-      ├── player                       état de jeu (1-1)
-      ├─< user_card >── car            collection (quantité par carte)
-      ├─< booster_opening              historique des ouvertures
-      ├─< user_achievement             succès débloqués
-      ├─< credit_transaction           journal des crédits
-      ├─< game_session                 parties de mini-jeux
-      ├─< shop_purchase                achats en boutique
-      ├─< trade_offer (vendeur / acheteur) >── car (proposée / demandée)
-      ├─< auction (vendeur / meilleur enchérisseur) >── car ; auction ─< bid
-      └─< push_subscription            appareils abonnés aux notifications
+
+### Joueur, collection et progression
+
+```mermaid
+erDiagram
+  user ||--|| player : "1-1"
+  user ||--o{ user_card : "possède"
+  car ||--o{ user_card : "exemplaires"
+  user ||--o{ booster_opening : "ouvre"
+  user ||--o{ user_achievement : "débloque"
+  user ||--o{ game_session : "joue"
+  user {
+    string id PK
+    string name
+    string email UK
+    datetime createdAt "ancienneté (accès au marché)"
+  }
+  player {
+    string userId PK
+    int boosters "réserve"
+    datetime boosterAnchor "régénération"
+    int boostersOpened
+    int sinceEpic "garantie"
+    int sinceLegendary "garantie"
+    int credits
+    int dailyStreak
+    string lastDailyClaim
+    bool isBot
+  }
+  car {
+    int id PK
+    string externalId UK "QID Wikidata"
+    string name
+    string manufacturer
+    enum rarity
+    enum rarityOverride
+    bool active
+  }
+  user_card {
+    string userId PK
+    int carId PK
+    int quantity "toujours >= 1"
+  }
+  booster_opening {
+    uuid id PK
+    string userId FK
+    int_array carIds
+  }
+  user_achievement {
+    string userId PK
+    string achievementId PK "payé une seule fois"
+  }
+  game_session {
+    uuid id PK
+    string userId FK
+    enum type
+    enum status
+    json state "réponses jamais envoyées"
+    int score
+  }
 ```
+
+### Économie et marché
+
+```mermaid
+erDiagram
+  user ||--o{ credit_transaction : "journal"
+  user ||--o{ shop_purchase : "achète"
+  user ||--o{ trade_offer : "vend"
+  car ||--o{ trade_offer : "proposée / demandée"
+  user ||--o{ auction : "vend / mène"
+  car ||--o{ auction : "en vente"
+  auction ||--o{ bid : "offres"
+  credit_transaction {
+    uuid id PK
+    string userId FK
+    int amount "+ gain / - dépense"
+    string reason
+    string ref
+    int balance "solde après"
+  }
+  shop_purchase {
+    uuid id PK
+    string userId FK
+    string offerKey "unique par joueur"
+    int carId
+    int price
+  }
+  trade_offer {
+    uuid id PK
+    string sellerId FK
+    int offeredCarId FK "en séquestre"
+    int wantedCarId FK "ou bien price"
+    int price
+    enum status
+    string buyerId FK
+    datetime expiresAt
+  }
+  auction {
+    uuid id PK
+    string sellerId FK
+    int carId FK "en séquestre"
+    int startPrice
+    int currentBid "crédits bloqués"
+    string bidderId FK
+    enum status
+    datetime endsAt
+  }
+  bid {
+    uuid id PK
+    uuid auctionId FK
+    string userId FK
+    int amount
+  }
+```
+
+Tables par contexte (chaque contexte n'écrit que ses tables, ou ses colonnes de `player`) :
+
+| Contexte | Tables / colonnes |
+| --- | --- |
+| `identity` | `user`, `session`, `account`, `verification` (Better Auth) |
+| `wallet` | `player.credits`, `player.creditsEarned`, `credit_transaction` |
+| `collection` | `user_card`, `booster_opening`, `player.boosters`, `boosterAnchor`, `boostersOpened`, `cardsObtained`, `sinceEpic`, `sinceLegendary` |
+| `progression` | `user_achievement`, `player.dailyStreak`, `bestStreak`, `lastDailyClaim` |
+| `games` | `game_session`, `player.gamesPlayed`, `gameCardsWon`, `doorsJackpots` |
+| `marketplace` | `shop_purchase`, `trade_offer`, `auction`, `bid`, `player.shopPurchases`, `tradesCompleted`, `auctionsWon`, `auctionsSold` |
+| `catalog` | `car` |
+| `notifications` | `push_subscription`, `player.fullNotifiedAnchor` |
+| `bots` | `player.isBot`, `botProfile`, `botNextActionAt` |
 
 ## Tables
 

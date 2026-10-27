@@ -4,7 +4,7 @@ import { NotFound } from '../../../shared/domain/errors';
 import { Db } from '../../../shared/infrastructure/prisma/transaction';
 import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { Auction } from '../domain/auction';
-import { AuctionRepository, MarketCounters, ShopCatalog, ShopPurchaseRepository, TradeOfferRepository } from '../domain/ports';
+import { AuctionRepository, MarketCounters, ShopCatalog, ShopPurchaseRepository, TraderProfiles, TradeOfferRepository } from '../domain/ports';
 import { TradeOffer } from '../domain/trade-offer';
 
 const tradeToDomain = (r: TradeRow) =>
@@ -155,5 +155,21 @@ export class PrismaMarketCounters extends MarketCounters {
         auctionsSold: { increment: c.auctionsSold ?? 0 },
       },
     });
+  }
+}
+
+@Injectable()
+export class PrismaTraderProfiles extends TraderProfiles {
+  constructor(private readonly db: Db) {
+    super();
+  }
+
+  async get(userId: string) {
+    const p = await this.db.tx.player.findUnique({
+      where: { userId },
+      select: { boostersOpened: true, isBot: true, user: { select: { createdAt: true } } },
+    });
+    if (!p) throw new NotFound('Joueur introuvable');
+    return { accountCreatedAt: p.user.createdAt, boostersOpened: p.boostersOpened, isBot: p.isBot };
   }
 }

@@ -42,6 +42,10 @@ Les bots sont **signalés par 🤖** à côté de leur pseudo, partout où un ps
 
 Les bots n'ont **pas de compte de connexion** : personne ne peut se connecter à leur place.
 
+## Mêmes règles que les joueurs
+
+Les bots passent par les mêmes actions que les joueurs, avec les mêmes contrôles : solde, séquestre, offre minimale, prix plancher, commission. Ils ne sont dispensés que de l'ancienneté de compte exigée pour accéder au marché, puisqu'ils sont pilotés par le serveur et ne peuvent pas servir à transférer des biens.
+
 ## Réglages
 
 | Variable | Défaut | Effet |

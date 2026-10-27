@@ -2,25 +2,14 @@
 
 ## Vue d'ensemble
 
-```
- Navigateur / PWA installée
- (Nuxt 4 en mode SPA + service worker)
-        │  HTTPS, même origine
-        ▼
- ┌──────────────────────┐      /api/**  (proxy)     ┌──────────────────────────┐
- │ web : Nuxt / Nitro   │ ─────────────────────────►│ api : NestJS 11          │
- │ sert l'app + proxy   │                           │ Better Auth, Prisma 6    │
- └──────────────────────┘                           │ tâches de fond :         │
-                                                    │  · import catalogue      │
-                                                    │  · rapatriement médias   │
-                                                    │  · notifications push    │
-                                                    │  · expiration des offres │
-                                                    └───────┬─────────┬────────┘
-                                                            │         │
-                                                  PostgreSQL 17    volume « media »
-                                                            ▲      (photos WebP)
-                                                            │
-                         Wikidata · Wikimedia Commons · Wikipédia (import)
+```mermaid
+flowchart LR
+  U["📱 Navigateur / PWA<br/>Nuxt 4 SPA + service worker"] -- "HTTPS, même origine" --> W["web : Nuxt / Nitro<br/>sert l'app + proxy /api"]
+  W -- "/api/** (proxy)" --> A["api : NestJS 11<br/>Better Auth · Prisma 6<br/>tâches de fond"]
+  A --> DB[("PostgreSQL 17")]
+  A --> M[("volume « media »<br/>photos WebP")]
+  A -. "import" .-> WD["Wikidata · Commons · Wikipédia"]
+  A -. "notifications" .-> WP["Services Web Push<br/>(Google, Mozilla, Apple…)"]
 ```
 
 Trois conteneurs Docker : `db` (PostgreSQL), `api` (NestJS) et `web` (Nuxt). Seul `web` est exposé.
@@ -84,6 +73,32 @@ docker-compose.yml
 5. Le **contrôleur** (`http/`) valide les entrées. Tout champ non prévu est refusé. Il appelle ensuite le **cas d'usage** (`application/`).
 6. Le cas d'usage ouvre une **unité de travail** (transaction portée par le contexte), **verrouille** le joueur (`SELECT … FOR UPDATE`) et charge les **agrégats** (`domain/`), qui appliquent les règles. Il enregistre ensuite via les repositories (`infrastructure/`) et publie des **événements de domaine**.
 7. Les abonnés aux événements agissent dans la même transaction (succès et leurs récompenses), puis après validation (notifications push). Les succès débloqués sont ajoutés à la réponse (`newAchievements`).
+
+```mermaid
+sequenceDiagram
+  participant N as Navigateur
+  participant P as Proxy Nitro
+  participant O as Contrôle d'origine
+  participant G as Gardes (session, débit)
+  participant I as Intercepteurs
+  participant C as Contrôleur + DTO
+  participant U as Cas d'usage
+  participant D as Domaine
+  participant R as Repositories
+  N->>P: POST /api/... (cookie de session)
+  P->>O: + X-Forwarded-For
+  O->>G: origine = le site ?
+  G->>I: session valide ? débit < limite ?
+  I->>C: fiche joueur créée si besoin
+  C->>U: entrées validées (champs en trop → 400)
+  U->>R: transaction + verrous (FOR UPDATE)
+  R-->>U: agrégats
+  U->>D: règles du jeu
+  D-->>U: décision (ou erreur métier)
+  U->>R: écritures + événements de domaine
+  U-->>C: résultat
+  C-->>N: JSON (+ newAchievements)
+```
 
 Voir l'exemple complet dans [Architecture DDD](13-architecture.md#exemple--ouverture-dun-booster).
 

@@ -1,29 +1,29 @@
-import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, quantityOf, setCredits, statuses, waitFor } from '../helpers';
+import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, newTrader, quantityOf, setCredits, statuses, waitFor } from '../helpers';
 
 describe('Enchères', () => {
   it('bloque les crédits, rembourse le surenchéri et règle la vente', async () => {
-    const seller = await newPlayer();
-    const b1 = await newPlayer();
-    const b2 = await newPlayer();
+    const seller = await newTrader();
+    const b1 = await newTrader();
+    const b2 = await newTrader();
     const car = await carOfRarity('RARE', 1);
     await giveCard(seller.id, car.id);
     await setCredits(b1.id, 500);
     await setCredits(b2.id, 500);
 
-    const { body } = await seller.agent.post('/api/auctions').send({ carId: car.id, startPrice: 20, durationHours: 1 }).expect(201);
+    const { body } = await seller.agent.post('/api/auctions').send({ carId: car.id, startPrice: 60, durationHours: 1 }).expect(201);
     expect(await quantityOf(seller.id, car.id)).toBe(0);
 
-    await seller.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 50 }).expect(400);
-    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 19 }).expect(400);
-    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 20 }).expect(200);
-    expect(await creditsOf(b1.id)).toBe(480);
+    await seller.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 70 }).expect(400);
+    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 59 }).expect(400);
+    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 60 }).expect(200);
+    expect(await creditsOf(b1.id)).toBe(440);
     // Le meilleur enchérisseur ne surenchérit pas sur lui-même.
-    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 40 }).expect(409);
-    // Minimum suivant : 20 + max(1, 5 %) = 21.
-    await b2.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 20 }).expect(400);
-    await b2.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 21 }).expect(200);
+    await b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 80 }).expect(409);
+    // Minimum suivant : 60 + max(1, ⌈5 %⌉) = 63.
+    await b2.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 62 }).expect(400);
+    await b2.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 63 }).expect(200);
     expect(await creditsOf(b1.id)).toBe(500);
-    expect(await creditsOf(b2.id)).toBe(479);
+    expect(await creditsOf(b2.id)).toBe(437);
 
     // Une offre déjà faite interdit l'annulation.
     await seller.agent.post(`/api/auctions/${body.id}/cancel`).expect(409);
@@ -36,13 +36,13 @@ describe('Enchères', () => {
     });
     expect(done.status).toBe('SOLD');
     expect(await quantityOf(b2.id, car.id)).toBe(1);
-    expect(await creditsOf(seller.id)).toBe(sellerBefore + 21 - 1);
-    expect(await creditsOf(b2.id)).toBe(479);
+    expect(await creditsOf(seller.id)).toBe(sellerBefore + 63 - 3);
+    expect(await creditsOf(b2.id)).toBe(437);
   });
 
   it('prolonge une enchère qui reçoit une offre dans les dernières secondes', async () => {
-    const seller = await newPlayer();
-    const bidder = await newPlayer();
+    const seller = await newTrader();
+    const bidder = await newTrader();
     const car = await carOfRarity('COMMON', 6);
     await giveCard(seller.id, car.id);
     const { body } = await seller.agent.post('/api/auctions').send({ carId: car.id, startPrice: 5, durationHours: 1 }).expect(201);
@@ -53,7 +53,7 @@ describe('Enchères', () => {
   });
 
   it('rend la carte d’une enchère annulée ou invendue', async () => {
-    const seller = await newPlayer();
+    const seller = await newTrader();
     const c1 = await carOfRarity('COMMON', 7);
     const c2 = await carOfRarity('COMMON', 8);
     await giveCard(seller.id, c1.id);
@@ -69,7 +69,7 @@ describe('Enchères', () => {
   });
 
   it('valide la mise en vente et les offres', async () => {
-    const p = await newPlayer();
+    const p = await newTrader();
     const car = await carOfRarity('COMMON', 9);
     await giveCard(p.id, car.id);
     for (const payload of [
@@ -86,7 +86,7 @@ describe('Enchères', () => {
     expect(await quantityOf(p.id, car.id)).toBe(1);
 
     const { body } = await p.agent.post('/api/auctions').send({ carId: car.id, startPrice: 5, durationHours: 1 }).expect(201);
-    const bidder = await newPlayer();
+    const bidder = await newTrader();
     for (const amount of [0, -5, 2.5, 'abc', 99_999_999]) {
       await bidder.agent.post(`/api/auctions/${body.id}/bid`).send({ amount }).expect(400);
     }
@@ -96,9 +96,9 @@ describe('Enchères', () => {
   });
 
   it('deux offres simultanées au même montant : une seule est retenue, l’autre n’est pas débitée', async () => {
-    const seller = await newPlayer();
-    const b1 = await newPlayer();
-    const b2 = await newPlayer();
+    const seller = await newTrader();
+    const b1 = await newTrader();
+    const b2 = await newTrader();
     const car = await carOfRarity('COMMON', 11);
     await giveCard(seller.id, car.id);
     const { body } = await seller.agent.post('/api/auctions').send({ carId: car.id, startPrice: 30, durationHours: 1 }).expect(201);

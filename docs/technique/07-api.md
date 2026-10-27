@@ -6,7 +6,7 @@ Toutes les actions (`POST`) renvoient `newAchievements` : les succès débloqué
 
 Le client n'envoie que des **intentions**. Prix, cartes, raretés, gains, dates et bonnes réponses sont décidés par le serveur, et **tout champ non prévu dans le corps ou la requête est refusé (400)**.
 
-Codes courants : `400` entrée invalide ou champ non prévu · `401` non connecté · `403` interdit · `404` introuvable · `409` conflit de règle (plus de booster, crédits insuffisants, offre déjà prise…) · `429` trop de requêtes · `503` catalogue vide.
+Codes courants : `400` entrée invalide ou champ non prévu · `401` non connecté · `403` interdit (dont action envoyée depuis un autre site) · `404` introuvable · `409` conflit de règle (plus de booster, crédits insuffisants, offre déjà prise…) · `429` trop de requêtes · `503` catalogue vide.
 
 ## Authentification (Better Auth)
 
@@ -63,8 +63,8 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 
 | Méthode | Route | Rôle |
 | --- | --- | --- |
-| GET | `/trades` | `tab` (`all`/`forme`/`mine`), `search`, `rarity`, `page` → `offers[]` (`offered`, `wanted` ou `price`, `seller`, `sellerIsBot`, `expiresAt`, `mine`, `canAccept`), `balance`, `openLimit` |
-| POST | `/trades` | `{ offeredCarId, wantedCarId }` ou `{ offeredCarId, price }` → `{ id }` (la carte part en séquestre) |
+| GET | `/trades` | `tab` (`all`/`forme`/`mine`), `search`, `rarity`, `page` → `offers[]` (`offered`, `wanted` ou `price`, `seller`, `sellerIsBot`, `expiresAt`, `mine`, `canAccept`), `balance`, `openLimit`, `market { canTrade, reason, priceFloor, maxSwapRarityGap }` |
+| POST | `/trades` | `{ offeredCarId, wantedCarId }` ou `{ offeredCarId, price }` → `{ id }` (la carte part en séquestre). `409` : compte pas encore admis au marché, prix sous le plancher, raretés trop éloignées |
 | POST | `/trades/:id/accept` | → `card`, `balance`, `newAchievements`, `tradeId` |
 | POST | `/trades/:id/cancel` | Vendeur uniquement ; la carte est rendue |
 
@@ -72,7 +72,7 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 
 | Méthode | Route | Rôle |
 | --- | --- | --- |
-| GET | `/auctions` | `tab` (`all`/`selling`/`bidding`), `search`, `rarity`, `page` → `auctions[]` (`card`, `startPrice`, `currentBid`, `minBid`, `bidCount`, `endsAt`, `seller { name, isBot }`, `bidder`, `mine`, `leading`), `balance`, `feePercent`, `durations`, `openLimit` |
+| GET | `/auctions` | `tab` (`all`/`selling`/`bidding`), `search`, `rarity`, `page` → `auctions[]` (`card`, `startPrice`, `currentBid`, `minBid`, `bidCount`, `endsAt`, `seller { name, isBot }`, `bidder`, `mine`, `leading`), `balance`, `feePercent`, `durations`, `openLimit`, `market` (comme `/trades`) |
 | POST | `/auctions` | `{ carId, startPrice, durationHours }` → `{ id }` (la carte part en séquestre) |
 | POST | `/auctions/:id/bid` | `{ amount }` → `currentBid`, `minBid`, `endsAt`, `balance`. `400` si sous le minimum, `409` si déjà meilleur enchérisseur ou enchère terminée |
 | POST | `/auctions/:id/cancel` | Vendeur uniquement, tant qu'il n'y a pas d'offre |

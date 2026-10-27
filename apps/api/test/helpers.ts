@@ -26,6 +26,17 @@ export async function newPlayer(name = 'Testeur'): Promise<TestPlayer> {
   return { agent, id: me.body.user.id, email };
 }
 
+/**
+ * Joueur admis au marché : compte de plus de 24 h ayant ouvert au moins 3 boosters
+ * (garde-fous contre les comptes multiples). On vieillit le compte en base, sans passer par l'API.
+ */
+export async function newTrader(name = 'Marchand'): Promise<TestPlayer> {
+  const p = await newPlayer(name);
+  await db.user.update({ where: { id: p.id }, data: { createdAt: new Date(Date.now() - 48 * 3600_000) } });
+  await db.player.update({ where: { userId: p.id }, data: { boostersOpened: 3 } });
+  return p;
+}
+
 /** Fixe le solde d'un joueur en passant par le journal (l'invariant solde = départ + journal reste vrai). */
 export async function setCredits(userId: string, credits: number) {
   const player = await db.player.findUniqueOrThrow({ where: { userId } });

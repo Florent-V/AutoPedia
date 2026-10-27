@@ -17,6 +17,7 @@ cd apps/web && npx nuxt typecheck
 | `collection/domain/booster-reserve.spec.ts` | Réserve vide refusée, régénération avant ouverture, garanties remises à zéro, boosters offerts au-delà du maximum |
 | `games/domain/game-session.spec.ts` | Aucun champ secret dans la vue, fin au premier faux pas, bonus de sans-faute, réponses hors format, cartes gagnées, portes |
 | `marketplace/domain/auction.spec.ts` | Mise en vente validée, offre minimale, surenchère sur soi-même, prolongation, annulation, règlement et commission |
+| `marketplace/domain/market-policy.spec.ts` | Marché fermé aux comptes récents ou inactifs (sauf bots), prix plancher, échanges trop déséquilibrés |
 | `marketplace/domain/trade-offer.spec.ts` | Contrepartie unique, prix bornés, acceptation unique et non expirée, retrait par le vendeur seulement |
 | `progression/domain/daily-streak.spec.ts` | Une réclamation par jour, série continue et cycle de 7 jours, série remise à 1 |
 | `notifications/domain/push-endpoint.spec.ts` | Adresses de notification limitées aux services connus (anti-SSRF) |

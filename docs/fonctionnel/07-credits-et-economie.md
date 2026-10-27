@@ -2,6 +2,31 @@
 
 Les **crédits (🪙)** sont la monnaie du jeu. Le solde est affiché en permanence dans l'en-tête, et l'historique des derniers mouvements se trouve sur le profil.
 
+```mermaid
+flowchart LR
+  subgraph Sources["Créés par le jeu"]
+    B["Bonus de bienvenue"]
+    G["Duel, Quiz"]
+    D["Récompense du jour"]
+    S["Succès"]
+  end
+  subgraph Entre["Échangés entre joueurs"]
+    TV["Vente à la bourse"]
+    EV["Vente aux enchères"]
+  end
+  subgraph Puits["Retirés du jeu"]
+    BO["Boutique"]
+    CO["Commission des enchères (5 %)"]
+  end
+  B & G & D & S --> W(("🪙 Portefeuille"))
+  W --> BO
+  W <--> TV
+  W <--> EV
+  EV --> CO
+```
+
+Chaque mouvement passe par le **portefeuille** du serveur : il refuse tout solde négatif et inscrit chaque opération au journal, avec le solde obtenu.
+
 ## D'où viennent les crédits (sources)
 
 | Source | Montant | Limite |
@@ -24,6 +49,8 @@ Les **crédits (🪙)** sont la monnaie du jeu. Le solde est affiché en permane
 | Commission des enchères | 5 % du prix de vente, **détruits** |
 
 ## Principes d'équilibre
+
+- **Pas de transfert déguisé entre comptes** : la bourse et les enchères ne sont ouvertes qu'aux comptes de plus de 24 heures ayant ouvert au moins 3 boosters. Les prix ne peuvent pas descendre sous un plancher par rareté, et les échanges carte contre carte se font entre raretés proches. Voir [Bourse](09-bourse-echanges.md#garde-fous).
 
 - **Création monétaire limitée** : les seules sources de crédits « neufs » sont le bonus de bienvenue et les deux jeux à crédits, plafonnés par le nombre de parties par jour (525 crédits par jour au maximum). Les jeux rapides donnent des **cartes**, pas de crédits : ils n'alimentent pas l'inflation. Les échanges de la bourse ne font que **déplacer** des crédits entre joueurs, sans en créer.
 - **Les puits** : la boutique (les crédits dépensés disparaissent) et la commission de 5 % des enchères. L'inflation reste ainsi contenue malgré les récompenses.

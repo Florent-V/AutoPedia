@@ -15,7 +15,9 @@
 | --- | --- |
 | Force brute sur la connexion | Limitation Better Auth : 10 tentatives par minute et par IP sur `/sign-in/email`, 5 inscriptions par minute sur `/sign-up/email`, 100 requêtes par minute sur le reste de `/api/auth` |
 | IP falsifiée pour contourner la limitation | Le proxy Nuxt **écrase** `X-Forwarded-For` avec l'IP réelle de la connexion. Il ne fait confiance à l'en-tête entrant que si `TRUST_PROXY=true` (reverse proxy de confiance devant le site) |
-| CSRF | Cookies `SameSite=Lax`, origines de confiance (`trustedOrigins` = `WEB_ORIGIN`), API sur la même origine |
+| CSRF | Cookies `SameSite=Lax`, origines de confiance (`trustedOrigins` = `WEB_ORIGIN`), API sur la même origine. En plus, **toute action** (`POST`…) portant un en-tête `Origin` étranger ou `Sec-Fetch-Site: cross-site` est refusée (403, `shared/http/origin-check.ts`) |
+| Affichage du site dans un cadre (clickjacking) | Le site Nuxt envoie `X-Frame-Options: DENY` et `Content-Security-Policy: frame-ancestors 'none'`, plus `nosniff`, `Referrer-Policy` et `Permissions-Policy` |
+| Dépendances vulnérables | `npm audit` corrigé dans les deux applications (dont `sharp` 0.35.5, qui traite les images téléchargées, et `multer` forcé en 2.5). Reste un avertissement sur `deepmerge-ts`, utilisé uniquement par l'outil en ligne de commande de Prisma (lecture de sa configuration), jamais sur une donnée joueur |
 | Base de données exposée | Port PostgreSQL publié uniquement sur `127.0.0.1` |
 | Accès aux fichiers via `/api/media` | `express.static` avec `dotfiles: deny` ; les tentatives `../` renvoient 403 (vérifié) |
 | Routes d'administration | En-tête `x-admin-token` comparé en temps constant ; désactivées si `ADMIN_TOKEN` fait moins de 16 caractères |
@@ -35,10 +37,18 @@ Le principe : **le client n'est jamais cru**. Toute règle de jeu est appliquée
 | Boosters | Choisir ses cartes : le tirage se fait côté serveur, sous verrou. Ouvrir plus de boosters que la réserve : celle-ci est calculée à partir de l'heure du **serveur** |
 | Mini-jeux | Connaître la réponse : elle reste dans `game_session.state` et la vue envoyée au client la retire (vérifié par test). Répondre deux fois à une manche : verrou sur la partie. Relancer une partie pour tomber sur une question plus facile : la partie active est reprise et toute partie commencée compte dans la limite du jour. Deviner à partir du nom de fichier de la photo : les fichiers sont nommés d'après le QID Wikidata |
 | Boutique | Acheter une offre absente de la rotation en cours : l'offre est recalculée côté serveur. L'acheter deux fois : contrainte d'unicité. Payer moins cher : le prix est recalculé côté serveur |
-| Bourse | Vendre une carte deux fois : séquestre. Accepter une offre deux fois : verrou et statut. Créer des crédits : la bourse ne fait que transférer, chaque mouvement est journalisé |
+| Bourse | Vendre une carte deux fois : séquestre. Accepter une offre deux fois : verrou et statut. Créer des crédits : la bourse ne fait que transférer, chaque mouvement est journalisé. Transférer ses biens depuis des comptes jetables : marché réservé aux comptes de plus de 24 h ayant ouvert 3 boosters, prix plancher par rareté, échanges limités à des raretés proches |
+| Enchères | Enchérir sous le minimum, sur sa propre vente ou après la fin ; dépenser plus que son solde (les crédits sont bloqués dès l'offre) ; gonfler une vente avec un compte jetable (mêmes conditions d'accès que la bourse) |
+| Récompense quotidienne | La réclamer deux fois ou fausser la série : dates calculées par l'horloge du serveur, sous verrou |
 | Crédits | Les modifier : seules les règles du serveur écrivent `player.credits`, et chaque mouvement est enregistré dans `credit_transaction` |
 
-Limite assumée : un joueur peut chercher les réponses du quiz sur Internet. Aucun chronomètre n'est imposé pour l'instant (voir [Évolutions](11-evolutions.md)).
+Le détail complet, contrôle par contrôle, est dans [Architecture DDD : où sont faits les contrôles anti-triche](13-architecture.md#où-sont-faits-les-contrôles-anti-triche).
+
+## Limites connues
+
+- **Comptes multiples** : les garde-fous du marché rendent l'abus lent et coûteux, sans l'empêcher totalement. Un joueur patient peut encore préparer des comptes pendant plusieurs jours. Les étapes suivantes seraient la vérification de l'email (il faut un serveur d'envoi), une limite de comptes par adresse IP, ou la détection de transferts répétés entre les deux mêmes comptes.
+- **Limitation de débit en mémoire** : avec plusieurs instances de l'API, il faudrait un stockage partagé (Redis).
+- Un joueur peut chercher les réponses du quiz sur Internet. Aucun chronomètre n'est imposé pour l'instant (voir [Évolutions](11-evolutions.md)).
 
 ## Données personnelles
 

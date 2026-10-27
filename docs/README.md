@@ -2,6 +2,8 @@
 
 Garage est un jeu de collection de cartes sur le thème de l'automobile. Chaque carte est un vrai modèle de voiture (de série ou de course), avec ses données issues de Wikidata, sa photo de Wikimedia Commons et son résumé Wikipédia.
 
+> **Version HTML** : ouvrir [`docs/index.html`](index.html) dans un navigateur (double-clic suffit). Toute la documentation y est réunie, avec un sommaire, une recherche, les schémas dessinés (clic pour agrandir), et les thèmes clair et sombre. Aucune installation n'est nécessaire : la mise en forme vient d'un CDN (jsdelivr), protégée par des empreintes SRI. Après une modification des fichiers Markdown, régénérer la page avec `node docs/build-html.mjs` (Node.js seul, aucune dépendance). Les schémas s'affichent aussi directement sur GitHub (Mermaid).
+
 Cette documentation a deux volets :
 
 - **Fonctionnel** : ce que vit le joueur, les règles du jeu et les choix de conception.

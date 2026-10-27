@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Mise aux enchères d'une de mes cartes. */
-const props = defineProps<{ initialCardId?: number | null; durations: number[]; feePercent: number }>();
+const props = defineProps<{ initialCardId?: number | null; durations: number[]; feePercent: number; priceFloor?: Record<Rarity, number> }>();
 const emit = defineEmits<{ close: []; created: [] }>();
 
 /** Mise à prix suggérée : la moitié du prix boutique de la rareté. */
@@ -8,6 +8,8 @@ const SUGGESTED: Record<Rarity, number> = { COMMON: 20, UNCOMMON: 60, RARE: 200,
 
 const card = ref<Card | null>(null);
 const startPrice = ref(20);
+/** Mise à prix minimale imposée par le serveur pour la rareté de la carte. */
+const floor = computed(() => (card.value && props.priceFloor?.[card.value.rarity]) || 1);
 const duration = ref(props.durations.includes(6) ? 6 : props.durations[0]!);
 const picking = ref(false);
 const error = ref<string | null>(null);
@@ -62,7 +64,8 @@ async function submit() {
         <div class="create__form">
           <label class="field">
             <span class="muted">Mise à prix (🪙)</span>
-            <input v-model.number="startPrice" class="input" type="number" min="1" inputmode="numeric" />
+            <input v-model.number="startPrice" class="input" type="number" :min="floor" inputmode="numeric" />
+            <small v-if="floor > 1" class="muted">Minimum : {{ floor }} 🪙</small>
           </label>
           <div class="field">
             <span class="muted">Durée</span>
@@ -79,7 +82,7 @@ async function submit() {
         {{ feePercent }} % de commission. Sans offre, elle revient dans votre collection. Une offre dans les 2 dernières minutes prolonge l’enchère.
       </p>
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn btn-primary btn-lg" :disabled="!card || startPrice < 1 || busy" @click="submit">Lancer l’enchère</button>
+      <button class="btn btn-primary btn-lg" :disabled="!card || startPrice < floor || busy" @click="submit">Lancer l’enchère</button>
     </div>
 
     <MarketCardPicker v-if="picking" title="Quelle carte mettre aux enchères ?" :owned="true" @pick="pick" @close="picking = false" />

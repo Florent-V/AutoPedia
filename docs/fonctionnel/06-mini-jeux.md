@@ -16,6 +16,29 @@ Les mini-jeux mettent en valeur les données du catalogue : on apprend des chose
 - Le **meilleur score** des jeux à crédits est affiché.
 - Toutes les réponses sont vérifiées par le serveur : voir [Sécurité](../technique/03-authentification-securite.md#anti-triche).
 
+## Déroulé d'une partie
+
+La bonne réponse reste sur le serveur : l'écran ne reçoit que la question et les choix. Elle n'est révélée qu'après la réponse.
+
+```mermaid
+flowchart TD
+  S["Lancer un jeu"] --> L{"Parties restantes<br/>aujourd'hui ?"}
+  L -- non --> N["Revenir demain"]
+  L -- "oui (ou partie en cours reprise)" --> Q["Question tirée par le serveur"]
+  Q --> R["Le joueur répond"]
+  R --> V{"Bonne réponse ?"}
+  V -- oui --> G["Gain : crédits ou carte"]
+  V -- non --> F{"Le jeu s'arrête<br/>à la première erreur ?"}
+  G --> E{"Dernière manche ?"}
+  F -- oui --> FIN["Fin de partie"]
+  F -- non --> E
+  E -- non --> Q
+  E -- oui --> P{"Sans-faute ?"}
+  P -- "oui (Duel, Quiz)" --> B["Carte bonus"] --> FIN
+  P -- non --> FIN
+  FIN --> SU["Succès vérifiés"]
+```
+
 ## ⚖️ Poids lourds
 
 > « Laquelle est la plus lourde ? »

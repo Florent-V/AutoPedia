@@ -13,16 +13,22 @@ Le jeu se joue en solo, mais l'économie (crédits, bourse) relie déjà les jou
 
 ## La boucle de jeu
 
-```
-           ┌──────────── toutes les 30 min ───────────┐
-           ▼                                          │
-   [Réserve de boosters] ──ouvrir──► [5 cartes] ──► [Collection]
-                                                       │   ▲
-   [Mini-jeux] ──crédits──► [Boutique] ──carte─────────┘   │
-        │                                                  │
-        └── carte gagnée / bonus ──────────────────────────┤
-                                                           │
-   [Doublons] ──mise en bourse──► [Bourse] ◄──► autres joueurs
+```mermaid
+flowchart TB
+  T(["⏱️ 1 booster toutes les 30 min"]) --> R["🎁 Réserve de boosters<br/>(10 max)"]
+  R -- ouvrir --> C["🃏 5 cartes"] --> COL[("📚 Collection")]
+  J["🎮 Mini-jeux"] -- crédits --> W["🪙 Crédits"]
+  J -- carte gagnée --> COL
+  D["📅 Récompense du jour"] --> W
+  D -- boosters --> R
+  S["🏆 Succès"] -- crédits --> W
+  W -- achat --> B["🏪 Boutique"] --> COL
+  W -- offre --> E["🔨 Enchères"]
+  COL -- doublons --> M["🤝 Bourse"]
+  COL -- doublons --> E
+  M <--> P(("Autres joueurs<br/>et bots 🤖"))
+  E <--> P
+  COL -. progresse .-> S
 ```
 
 1. **Revenir régulièrement** : la réserve se remplit toute seule. Une notification prévient quand elle est pleine.
@@ -31,6 +37,32 @@ Le jeu se joue en solo, mais l'économie (crédits, bourse) relie déjà les jou
 4. **Dépenser ses crédits** à la boutique, dont le contenu tourne toutes les heures, ou aux **enchères**.
 5. **Échanger ses doublons** à la bourse contre des cartes manquantes ou des crédits.
 6. **Débloquer des succès**, qui rapportent des crédits, et réclamer sa **récompense quotidienne** pour faire grandir sa série de jours consécutifs.
+
+## Les actions possibles
+
+Toutes les actions du joueur sont des **demandes** : le serveur vérifie qu'elles sont permises (réserve, solde, possession de la carte, limites du jour…) et calcule lui-même le résultat. Le joueur ne choisit jamais un prix, une carte ou un gain à la place du jeu.
+
+```mermaid
+flowchart TB
+  J(("👤 Joueur"))
+  J --> A1["Ouvrir un booster"]
+  J --> A2["Réclamer la récompense du jour"]
+  J --> A3["Lancer un mini-jeu / répondre"]
+  J --> A4["Acheter une offre de la boutique"]
+  J --> A5["Mettre une carte en bourse<br/>(contre une carte ou des crédits)"]
+  J --> A6["Accepter / retirer une offre de la bourse"]
+  J --> A7["Mettre une carte aux enchères"]
+  J --> A8["Enchérir / annuler son enchère"]
+  J --> A9["Consulter : collection, fiche, succès, portefeuille"]
+  A1 -. "réserve > 0" .-> OK{{"✔️ vérifié par le serveur"}}
+  A2 -. "pas encore réclamée aujourd'hui" .-> OK
+  A3 -. "parties restantes, réponse au bon format" .-> OK
+  A4 -. "offre de l'heure, solde suffisant, 1 achat par offre" .-> OK
+  A5 -. "carte possédée, prix plancher, compte admis au marché" .-> OK
+  A6 -. "offre ouverte, pas la sienne, contrepartie disponible" .-> OK
+  A7 -. "carte possédée, mise à prix ≥ plancher, durée autorisée" .-> OK
+  A8 -. "≥ offre minimale, solde suffisant, enchère en cours" .-> OK
+```
 
 ## Les écrans
 

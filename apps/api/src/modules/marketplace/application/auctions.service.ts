@@ -1,14 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Clock, EventBus, PlayerLocks, UnitOfWork } from '../../../shared/application/ports';
-import { RuleViolation } from '../../../shared/domain/errors';
+import { NotFound, RuleViolation } from '../../../shared/domain/errors';
+import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { economyConfig } from '../../../config';
 import { CardsService } from '../../collection/application/cards.service';
 import { WalletService } from '../../wallet/application/wallet.service';
 import { Auction } from '../domain/auction';
 import { AuctionOutbid, AuctionSettled } from '../domain/events';
-import { AuctionRepository, MarketCounters } from '../domain/ports';
-import { auctionRules } from './market.config';
+import { assertCanTrade, assertPriceFloor } from '../domain/market-policy';
+import { AuctionRepository, MarketCounters, TraderProfiles } from '../domain/ports';
+import { auctionRules, marketPolicy } from './market.config';
 
 /**
  * Enchères. Verrous : l'enchère d'abord, puis les joueurs (triés) — même ordre partout.
@@ -21,6 +23,8 @@ export class AuctionsService {
     private readonly uow: UnitOfWork,
     private readonly locks: PlayerLocks,
     private readonly auctions: AuctionRepository,
+    private readonly traders: TraderProfiles,
+    private readonly catalog: CatalogReader,
     private readonly counters: MarketCounters,
     private readonly wallet: WalletService,
     private readonly cards: CardsService,
@@ -32,6 +36,10 @@ export class AuctionsService {
     return this.uow.run(async () => {
       const auction = Auction.open({ id: randomUUID(), sellerId, ...input, now: this.clock.now(), rules: auctionRules });
       await this.locks.lock(sellerId);
+      assertCanTrade(await this.traders.get(sellerId), this.clock.now(), marketPolicy);
+      const card = await this.catalog.view(auction.carId);
+      if (!card) throw new NotFound('Carte introuvable');
+      assertPriceFloor(card.rarity, input.startPrice, marketPolicy);
       const open = await this.auctions.countOpenBySeller(sellerId);
       if (open >= economyConfig.maxOpenAuctions) {
         throw new RuleViolation(`Vous avez déjà ${open} enchères en cours (maximum ${economyConfig.maxOpenAuctions})`);
@@ -49,6 +57,7 @@ export class AuctionsService {
       const auction = await this.auctions.getForUpdate(id);
       const { previous } = auction.bid(userId, amount, this.clock.now(), auctionRules);
       await this.locks.lock(userId, ...(previous ? [previous.userId] : []));
+      assertCanTrade(await this.traders.get(userId), this.clock.now(), marketPolicy);
       await this.wallet.debit(userId, amount, 'auction:bid', auction.id);
       if (previous) await this.wallet.credit(previous.userId, previous.amount, 'auction:refund', auction.id);
       await this.auctions.recordBid(auction.id, userId, amount);

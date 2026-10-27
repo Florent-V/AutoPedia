@@ -93,9 +93,20 @@ Transaction : verrou joueur, recalcul des offres de l'heure courante, offre intr
 
 ## Bourse d'échanges (contexte `marketplace`, agrégat `TradeOffer`)
 
+### Garde-fous contre les comptes multiples (`marketplace/domain/market-policy.ts`)
+
+| Règle | Réglage | Par défaut |
+| --- | --- | --- |
+| Ancienneté minimale du compte (vendre, accepter, mettre aux enchères, enchérir) | `MARKET_MIN_ACCOUNT_HOURS` | 24 h |
+| Boosters ouverts au minimum | `MARKET_MIN_BOOSTERS` | 3 |
+| Écart de rareté maximal d'un échange carte contre carte | `TRADE_MAX_RARITY_GAP` | 1 |
+| Prix plancher (vente à la bourse, mise à prix) | `priceFloor` | 5 / 15 / 50 / 150 / 500 |
+
+Les bots (`player.isBot`) sont dispensés des deux premières règles. Les listes `/trades` et `/auctions` renvoient `market { canTrade, reason, priceFloor, maxSwapRarityGap }` pour que l'interface explique un refus avant même l'action.
+
 ### Création
 
-Transaction : verrou vendeur, plafond d'offres ouvertes, existence de la carte demandée, puis **`CardsService.take` (séquestre)** et création de l'offre (`expiresAt = maintenant + TRADE_DAYS`). Exactement l'une des deux contreparties doit être renseignée : `wantedCarId` ou `price`.
+Transaction : verrou vendeur, accès au marché, plafond d'offres ouvertes, existence de la carte demandée et écart de rareté (échange) ou prix plancher (vente), puis **`CardsService.take` (séquestre)** et création de l'offre (`expiresAt = maintenant + TRADE_DAYS`). Exactement l'une des deux contreparties doit être renseignée : `wantedCarId` ou `price`.
 
 ### Acceptation
 
@@ -113,6 +124,32 @@ après validation : notification push au vendeur (abonné @AfterCommit)
 ```
 
 Testé : deux acceptations simultanées donnent 200 et 409.
+
+```mermaid
+sequenceDiagram
+  actor A as Acheteur
+  participant T as TradesService
+  participant O as TradeOffer
+  participant L as PlayerLocks
+  participant W as WalletService
+  participant C as CardsService
+  A->>T: POST /trades/:id/accept
+  T->>O: getForUpdate(id) (verrou de l'offre)
+  T->>O: accept(acheteur, maintenant)
+  O-->>T: ouverte ? pas la sienne ? pas expirée ?
+  T->>L: lock(acheteur, vendeur) (triés)
+  T->>T: accès au marché de l'acheteur
+  alt vente contre crédits
+    T->>W: debit(acheteur, prix)
+    T->>W: credit(vendeur, prix)
+  else échange
+    T->>C: take(acheteur, carte demandée)
+    T->>C: grant(vendeur, carte demandée)
+  end
+  T->>C: grant(acheteur, carte proposée)
+  T->>T: TradeCompleted → succès, COMMIT, push au vendeur
+  T-->>A: carte, solde, newAchievements
+```
 
 ### Annulation et expiration
 
@@ -141,6 +178,23 @@ transaction :
   credit(ancien, son montant, 'auction:refund')                ← remboursement immédiat
   bid + mise à jour de l'enchère ; événement AuctionOutbid
 après validation : notification push « surenchéri » à l'ancien meilleur enchérisseur
+```
+
+```mermaid
+sequenceDiagram
+  actor B as Enchérisseur
+  participant S as AuctionsService
+  participant AU as Auction
+  participant W as WalletService
+  B->>S: POST /auctions/:id/bid { amount }
+  S->>AU: getForUpdate(id) (verrou de l'enchère)
+  S->>AU: bid(joueur, montant, maintenant)
+  AU-->>S: en cours ? pas le vendeur ? pas déjà en tête ? ≥ minimum ?<br/>(prolongation si < 2 min) → précédent meilleur enchérisseur
+  S->>S: lock(enchérisseur, précédent) + accès au marché
+  S->>W: debit(enchérisseur, montant) — crédits bloqués
+  S->>W: credit(précédent, son montant) — remboursement
+  S->>S: bid enregistrée, AuctionOutbid, COMMIT, push au précédent
+  S-->>B: meilleure offre, minimum suivant, fin, solde
 ```
 
 ### Règlement (`settleDue`, toutes les 30 s et 3 s après le démarrage)

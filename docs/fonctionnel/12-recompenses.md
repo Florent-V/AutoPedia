@@ -23,6 +23,13 @@ Un calendrier de 7 jours s'affiche en haut de la page **Boosters**. Une fois par
 
 Succès liés : « Bonne habitude » (3 jours d'affilée), « Habitué du garage » (7 jours), « Fidèle au poste » (30 jours).
 
+```mermaid
+flowchart LR
+  J1["J1<br/>50 🪙"] --> J2["J2<br/>1 booster"] --> J3["J3<br/>100 🪙"] --> J4["J4<br/>2 boosters"] --> J5["J5<br/>150 🪙"] --> J6["J6<br/>3 boosters"] --> J7["J7<br/>200 🪙 + carte Épique"]
+  J7 -- "lendemain" --> J1
+  X["Jour manqué"] -. "la série repart" .-> J1
+```
+
 ## Récompenses des succès
 
 Chaque succès débloqué **verse automatiquement des crédits** selon son palier : 50 (bronze), 150 (argent), 400 (or), 1 000 (platine). Les 45 succès rapportent 11 400 crédits au total, étalés sur toute la vie du joueur : les premiers arrivent dès les premières minutes, les derniers après des mois. Voir [Succès et badges](05-succes-et-badges.md).
