@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { computePlayerStats, PlayerStats } from '../player/player-stats';
 import { moveCredits } from '../economy/wallet';
 import { ACHIEVEMENTS, AchievementDef, TIER_REWARD } from './achievements.definitions';

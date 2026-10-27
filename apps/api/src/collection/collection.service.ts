@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { RARITIES, RARITY_INFO } from '../game/rarity';
 import { toCardDto } from '../cars/card.dto';
 import { CollectionQuery } from './collection.query';

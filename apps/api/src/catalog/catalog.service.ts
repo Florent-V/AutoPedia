@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { assignRarities } from '../game/rarity';
 import { MediaService } from './media.service';
 import { SEED_CARS } from './seed-cars';

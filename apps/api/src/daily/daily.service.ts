@@ -7,7 +7,7 @@ import { toCardDto } from '../cars/card.dto';
 import { addCard, lockPlayers, moveCredits } from '../economy/wallet';
 import { startOfZonedDay, zonedParts } from '../game/zoned-time';
 import { boosterView, PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 
 export interface DailyReward {
   day: number;

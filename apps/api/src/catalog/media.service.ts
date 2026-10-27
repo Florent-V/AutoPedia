@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import sharp from 'sharp';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { HttpError, mediaWikiQuery, politeFetch } from './http';
 
 export const MEDIA_DIR = resolve(process.env.MEDIA_DIR ?? join(process.cwd(), 'media'));

@@ -2,14 +2,23 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { toNodeHandler } from 'better-auth/node';
 import express from 'express';
+import helmet from 'helmet';
 import { mkdirSync } from 'node:fs';
 import { AUTH, Auth } from './auth/auth';
 import { MEDIA_DIR } from './catalog/media.service';
+import { DomainErrorFilter } from './shared/http/domain-error.filter';
 
 /** Configuration HTTP commune au serveur et aux tests de bout en bout. */
 export function configureApp(app: NestExpressApplication) {
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
+  // En-têtes de sécurité. L'API ne sert que du JSON et des images : politique de contenu la plus stricte.
+  app.use(
+    helmet({
+      contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+      crossOriginResourcePolicy: { policy: 'same-site' },
+    }),
+  );
 
   // Le corps des requêtes Better Auth doit rester brut : on active le parseur JSON après le montage du handler.
   const auth = app.get<Auth>(AUTH);
@@ -24,7 +33,17 @@ export function configureApp(app: NestExpressApplication) {
   );
 
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+  // Toute donnée non prévue dans un DTO est refusée (400) : le client ne peut rien glisser de plus dans une requête.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+      stopAtFirstError: true,
+    }),
+  );
+  app.useGlobalFilters(new DomainErrorFilter());
   app.enableCors({
     origin: (process.env.WEB_ORIGIN ?? 'http://localhost:3000').split(','),
     credentials: true,

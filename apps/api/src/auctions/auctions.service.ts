@@ -14,7 +14,7 @@ import { AchievementsService } from '../achievements/achievements.service';
 import { toCardDto } from '../cars/card.dto';
 import { addCard, lockPlayers, moveCredits, removeCard } from '../economy/wallet';
 import { PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { PushService } from '../push/push.service';
 
 type Tx = Prisma.TransactionClient;

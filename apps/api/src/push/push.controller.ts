@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, ServiceUnavailableException } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsString, IsUrl, MaxLength, ValidateNested } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsUrl, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
 import { AuthUser, CurrentUser, Public } from '../auth/auth.guard';
 import { PushService } from './push.service';
 
@@ -12,6 +12,8 @@ class PushKeys {
 class SubscribeDto {
   @IsUrl({ protocols: ['https'], require_tld: false }) @MaxLength(1000) endpoint: string;
   @ValidateNested() @Type(() => PushKeys) keys: PushKeys;
+  /** Envoyé par les anciennes versions de l'application (PushSubscription.toJSON) ; ignoré. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() expirationTime?: number | null;
 }
 
 class UnsubscribeDto {

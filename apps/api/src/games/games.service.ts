@@ -8,7 +8,7 @@ import { addCard, lockPlayers, moveCredits } from '../economy/wallet';
 import { rollRarity } from '../game/rarity';
 import { startOfZonedDay } from '../game/zoned-time';
 import { PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { DuelRound, makeDuelRound, makeMysteryRound, makeQuizRound, makeWeightRound, MysteryRound, QuizRound, WeightRound } from './questions';
 
 type Tx = Prisma.TransactionClient;

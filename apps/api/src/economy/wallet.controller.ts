@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../auth/auth.guard';
 import { PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 
 const REASONS: Record<string, string> = {
   'game:duel': 'Duel de stats',

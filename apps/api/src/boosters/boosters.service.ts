@@ -4,7 +4,7 @@ import { economyConfig, gameConfig } from '../config';
 import { consumeBooster } from '../game/booster-clock';
 import { Pity, pityFor, RARITIES, rarityRank, rollBoosterRarities } from '../game/rarity';
 import { addCard } from '../economy/wallet';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { boosterView, PlayerService } from '../player/player.service';
 import { computePlayerStats } from '../player/player-stats';
 import { AchievementsService } from '../achievements/achievements.service';

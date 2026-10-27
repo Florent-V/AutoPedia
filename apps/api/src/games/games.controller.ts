@@ -1,13 +1,13 @@
 import { Body, Controller, Get, HttpCode, Param, ParseEnumPipe, ParseUUIDPipe, Post } from '@nestjs/common';
 import { GameType } from '@prisma/client';
-import { Allow } from 'class-validator';
+import { IsDefined, IsIn } from 'class-validator';
 import { AuthUser, CurrentUser } from '../auth/auth.guard';
 import { GamesService } from './games.service';
 
 class AnswerDto {
-  /** « a » / « b » pour le duel, 0 à 3 pour le quiz (validé par le service). */
-  @Allow()
-  choice: unknown;
+  /** « a » / « b » pour les duels, 0 à 3 pour les questions, 0 à 2 pour les portes (le service vérifie selon le jeu). */
+  @IsDefined() @IsIn(['a', 'b', 0, 1, 2, 3])
+  choice: 'a' | 'b' | 0 | 1 | 2 | 3;
 }
 
 @Controller('games')

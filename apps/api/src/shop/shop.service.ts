@@ -7,7 +7,7 @@ import { toCardDto } from '../cars/card.dto';
 import { addCard, lockPlayers, moveCredits } from '../economy/wallet';
 import { nextZonedHour, zonedParts } from '../game/zoned-time';
 import { PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { offersAt, SHOP_RULES } from './shop-rotation';
 
 /** Graine secrète : empêche de calculer à l'avance le programme des jours suivants. */

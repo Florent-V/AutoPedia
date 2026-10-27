@@ -38,7 +38,7 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | Étape | Contenu | État |
 | --- | --- | --- |
 | 0 | Suite de tests de bout en bout (vraie API, vraie base) qui rejoue les scénarios métier et anti-triche | ✅ |
-| 1 | Socle partagé : transactions (CLS), événements de domaine, erreurs métier, durcissement HTTP | ⏳ |
+| 1 | Socle partagé : transactions (CLS), événements de domaine, erreurs métier, durcissement HTTP | ✅ |
 | 2 | Contextes `wallet` et `collection` | ⏳ |
 | 3 | Contexte `progression` | ⏳ |
 | 4 | Contexte `games` | ⏳ |
@@ -46,6 +46,19 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | 6 | Contextes `catalog`, `notifications` et `bots`, nettoyage final | ⏳ |
 
 La suite de bout en bout doit rester verte à chaque étape.
+
+## Socle partagé (`src/shared/`)
+
+| Élément | Rôle |
+| --- | --- |
+| `domain/errors.ts` | `InvalidRequest` (400), `NotFound` (404), `Forbidden` (403), `RuleViolation` (409), `Unavailable` (503). Le domaine lève ces erreurs sans connaître HTTP |
+| `domain/credits.ts`, `domain/guards.ts` | Objet-valeur `Credits` et contrôles de bornes (entiers positifs, plafonds) |
+| `domain/domain-event.ts` | Contrat des événements de domaine (nom stable porté par la classe) |
+| `application/ports.ts` | Ports `UnitOfWork`, `EventBus`, `Clock`, `RandomSource` |
+| `infrastructure/cls-unit-of-work.ts` | Transaction Prisma portée par le contexte de la requête (`nestjs-cls` + `@nestjs-cls/transactional`). Les appels imbriqués rejoignent la transaction en cours. Les événements sont livrés aux abonnés `@OnDomainEvent` dans la transaction, puis aux abonnés `@AfterCommit` après validation |
+| `infrastructure/system.ts` | Horloge système et aléatoire cryptographique (`crypto.randomInt`) |
+| `http/domain-error.filter.ts` | Traduit les erreurs métier en réponses HTTP ; une violation d'unicité en base (double requête) devient un 409 |
+| `http/user-throttler.guard.ts` | Limitation de débit par joueur |
 
 ## Tests de bout en bout
 

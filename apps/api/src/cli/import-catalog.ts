@@ -1,7 +1,7 @@
 import '../env';
 import { NestFactory } from '@nestjs/core';
 import { Logger, Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../shared/infrastructure/prisma/prisma.module';
 import { CatalogService } from '../catalog/catalog.service';
 import { MediaService } from '../catalog/media.service';
 

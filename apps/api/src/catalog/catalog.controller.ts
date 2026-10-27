@@ -1,4 +1,6 @@
 import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, Post } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { timingSafeEqual } from 'node:crypto';
 import { Public } from '../auth/auth.guard';
 import { CatalogService, ImportSource } from './catalog.service';
@@ -12,6 +14,14 @@ function checkToken(token: string | undefined) {
     token.length === expected.length &&
     timingSafeEqual(Buffer.from(token), Buffer.from(expected));
   if (!valid) throw new ForbiddenException();
+}
+
+class ImportDto {
+  @IsOptional() @IsIn(['wikidata', 'seed', 'media'])
+  source?: ImportSource | 'media';
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(20_000)
+  limit?: number;
 }
 
 @Controller('admin/catalog')
@@ -35,7 +45,7 @@ export class CatalogController {
   @HttpCode(202)
   import(
     @Headers('x-admin-token') token: string | undefined,
-    @Body() body: { source?: ImportSource | 'media'; limit?: number },
+    @Body() body: ImportDto,
   ) {
     checkToken(token);
     if (body?.source === 'media') void this.media.syncAll();

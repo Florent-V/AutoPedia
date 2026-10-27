@@ -14,7 +14,7 @@ import { CollectionService } from './collection/collection.service';
 import { HealthController } from './health.controller';
 import { PlayerController } from './player/player.controller';
 import { PlayerService } from './player/player.service';
-import { PrismaModule } from './prisma/prisma.module';
+import { SharedModule } from './shared/shared.module';
 import { PushController } from './push/push.controller';
 import { PushService } from './push/push.service';
 import { GamesController } from './games/games.controller';
@@ -31,7 +31,7 @@ import { DailyService } from './daily/daily.service';
 import { BotsService } from './bots/bots.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [SharedModule, AuthModule],
   controllers: [
     HealthController,
     PlayerController,

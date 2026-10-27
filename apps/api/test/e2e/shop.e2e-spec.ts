@@ -39,13 +39,13 @@ describe('Boutique', () => {
     expect(await creditsOf(p.id)).toBe(100_000);
   });
 
-  it('ignore un prix envoyé par le client', async () => {
+  it('refuse un prix ou une carte envoyés par le client', async () => {
     const p = await newPlayer();
     const shop = await p.agent.get('/api/shop').expect(200);
     const offer = shop.body.offers.find((o: { price: number }) => o.price >= 10);
     await setCredits(p.id, offer.price);
-    const res = await p.agent.post('/api/shop/buy').send({ offerKey: offer.offerKey, price: 1 });
-    if (res.status === 200) expect(await creditsWithoutAchievements(p.id)).toBe(0);
-    else expect(res.status).toBe(400);
+    await p.agent.post('/api/shop/buy').send({ offerKey: offer.offerKey, price: 1 }).expect(400);
+    await p.agent.post('/api/shop/buy').send({ offerKey: offer.offerKey, carId: 1 }).expect(400);
+    expect(await creditsWithoutAchievements(p.id)).toBe(offer.price);
   });
 });

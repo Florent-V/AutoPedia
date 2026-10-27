@@ -42,4 +42,35 @@ describe('Sécurité HTTP', () => {
     await agent.post('/api/games/NOPE/start').expect(400);
     await agent.get('/api/cars/abc').expect(400);
   });
+
+  it('refuse tout champ non prévu dans une requête', async () => {
+    const p = await newPlayer();
+    await p.agent.post('/api/trades').send({ offeredCarId: 1, price: 10, sellerId: 'autre' }).expect(400);
+    await p.agent.post('/api/auctions').send({ carId: 1, startPrice: 5, durationHours: 1, currentBid: 999 }).expect(400);
+    const { body } = await p.agent.post('/api/games/QUIZ/start').expect(200);
+    await p.agent.post(`/api/games/sessions/${body.id}/answer`).send({ choice: 0, correct: true }).expect(400);
+    await p.agent.get('/api/collection?owned=all&isAdmin=true').expect(400);
+  });
+
+  it('borne la pagination', async () => {
+    const p = await newPlayer();
+    await p.agent.get('/api/collection?page=1000000').expect(400);
+    await p.agent.get('/api/collection?pageSize=1000').expect(400);
+    await p.agent.get('/api/trades?page=-1').expect(400);
+  });
+
+  it('envoie les en-têtes de sécurité', async () => {
+    const res = await anonymous().get('/api/health').expect(200);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['content-security-policy']).toContain("default-src 'none'");
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('protège l’administration contre une valeur d’import démesurée', async () => {
+    await anonymous()
+      .post('/api/admin/catalog/import')
+      .set('x-admin-token', 'e2e-admin-token-0123456789')
+      .send({ source: 'seed', limit: 10_000_000 })
+      .expect(400);
+  });
 });

@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { fetchWikiSummary } from '../catalog/http';
 import { imageCreditOf, toCardDto } from './card.dto';
 

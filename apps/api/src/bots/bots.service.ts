@@ -9,7 +9,7 @@ import { DailyService } from '../daily/daily.service';
 import { moveCredits } from '../economy/wallet';
 import { zonedParts } from '../game/zoned-time';
 import { PlayerService } from '../player/player.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { TradesService } from '../trades/trades.service';
 import {
   acceptsPriceOffer,

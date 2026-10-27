@@ -75,7 +75,8 @@ export function usePwa() {
     const sub =
       (await reg.pushManager.getSubscription()) ??
       (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }));
-    await api('/push/subscribe', { method: 'POST', body: sub.toJSON() });
+    const { endpoint, keys } = sub.toJSON();
+    await api('/push/subscribe', { method: 'POST', body: { endpoint, keys } });
     pushState.value = 'subscribed';
     return true;
   }

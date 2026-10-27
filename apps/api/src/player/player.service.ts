@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Player, Prisma, PrismaClient } from '@prisma/client';
 import { economyConfig, gameConfig } from '../config';
 import { BoosterStatus, computeBoosters } from '../game/booster-clock';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { AuthUser } from '../auth/auth.guard';
 import { computePlayerStats } from './player-stats';
 

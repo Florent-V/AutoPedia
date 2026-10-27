@@ -20,7 +20,10 @@
 | Accès aux fichiers via `/api/media` | `express.static` avec `dotfiles: deny` ; les tentatives `../` renvoient 403 (vérifié) |
 | Routes d'administration | En-tête `x-admin-token` comparé en temps constant ; désactivées si `ADMIN_TOKEN` fait moins de 16 caractères |
 | Secrets | `BETTER_AUTH_SECRET` obligatoire en production ; graine de la boutique dérivée de ce secret ou définie par `SHOP_SECRET` |
-| Entrées malformées | `ValidationPipe` global (`whitelist`, `transform`), identifiants vérifiés (`ParseUUIDPipe`, `ParseIntPipe`, `ParseEnumPipe`) |
+| Entrées malformées ou enrichies | `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `forbidUnknownValues`) : **tout champ non prévu est refusé (400)**, on ne peut donc rien glisser de plus (prix, carte, gagnant…) dans une requête. Identifiants vérifiés (`ParseUUIDPipe`, `ParseIntPipe`, `ParseEnumPipe`), pagination bornée (page ≤ 10 000, 100 éléments au plus). Les objets-valeurs du domaine revalident les montants (`Credits` : entier, jamais négatif, plafonné) |
+| Rafales de requêtes | `@nestjs/throttler` par joueur connecté (par IP sinon) : 20 requêtes par seconde et 300 par minute au plus (429 au-delà) |
+| En-têtes HTTP | `helmet` : `Content-Security-Policy: default-src 'none'`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy: same-site`, pas de `X-Powered-By` |
+| Notifications vers une adresse interne (SSRF) | L'adresse d'abonnement push doit être en HTTPS, sans port ni identifiant, et viser un service de notification connu (Google, Mozilla, Apple, Microsoft ; `PUSH_ALLOWED_HOSTS` pour en changer) |
 | Taille des requêtes | Corps JSON limité à 100 ko |
 
 ## Anti-triche
