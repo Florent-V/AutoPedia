@@ -9,7 +9,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Auction, Prisma } from '@prisma/client';
-import { economyConfig } from '../config';
+import { economyConfig, jobsConfig } from '../config';
 import { AchievementsService } from '../achievements/achievements.service';
 import { toCardDto } from '../cars/card.dto';
 import { addCard, lockPlayers, moveCredits, removeCard } from '../economy/wallet';
@@ -47,10 +47,10 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.NODE_ENV === 'test') return;
+    if (!jobsConfig.enabled) return;
     const run = () => void this.settleDue().catch((e) => this.logger.error(e));
-    setTimeout(run, 3000).unref();
-    this.timer = setInterval(run, 30_000);
+    setTimeout(run, Math.min(3000, jobsConfig.auctionSettleMs)).unref();
+    this.timer = setInterval(run, jobsConfig.auctionSettleMs);
     this.timer.unref();
   }
 

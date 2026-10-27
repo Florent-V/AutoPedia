@@ -33,7 +33,8 @@ export function createAuth(prisma: PrismaClient) {
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     rateLimit: {
-      enabled: true,
+      // Coupé uniquement pour les tests de bout en bout, qui créent des dizaines de comptes à la suite.
+      enabled: process.env.NODE_ENV !== 'test',
       window: 60,
       max: 100,
       customRules: {

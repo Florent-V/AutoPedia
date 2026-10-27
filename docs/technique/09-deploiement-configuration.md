@@ -77,6 +77,14 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `BOTS_START_CREDITS` | 1500 | Crédits de départ d'un bot |
 | `BOTS_TICK_SECONDS` | 60 | Fréquence de la boucle des bots |
 
+### Tâches de fond
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `BACKGROUND_JOBS` | `on` (`off` sous `NODE_ENV=test`) | Règlement des enchères et expiration des offres |
+| `AUCTION_SETTLE_SECONDS` | 30 | Fréquence du règlement des enchères échues |
+| `TRADE_EXPIRE_SECONDS` | 600 | Fréquence de l'expiration des offres de la bourse |
+
 ### Catalogue et médias
 
 | Variable | Défaut | Rôle |
@@ -89,6 +97,7 @@ En développement, le fichier `.env` de l'API est chargé automatiquement (`proc
 | `MEDIA_DIR` | `./media` (`/data/media` en Docker) | Dossier des photos |
 | `MEDIA_REMOTE_FALLBACK` | `true` | Afficher l'image distante tant que la copie locale manque |
 | `MEDIA_SYNC_HOURS` | 6 | Fréquence de reprise du rapatriement (0 = jamais) |
+| `MEDIA_SYNC` | `on` | `off` : l'import ne rapatrie ni photos ni résumés (tests) |
 
 ### Notifications et administration
 

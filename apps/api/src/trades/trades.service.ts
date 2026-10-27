@@ -9,7 +9,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Prisma, TradeOffer } from '@prisma/client';
-import { economyConfig } from '../config';
+import { economyConfig, jobsConfig } from '../config';
 import { AchievementsService } from '../achievements/achievements.service';
 import { toCardDto } from '../cars/card.dto';
 import { addCard, lockPlayers, moveCredits, removeCard } from '../economy/wallet';
@@ -45,10 +45,10 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.NODE_ENV === 'test') return;
+    if (!jobsConfig.enabled) return;
     const run = () => void this.expire().catch((e) => this.logger.error(e));
-    setTimeout(run, 5000).unref();
-    this.timer = setInterval(run, 10 * 60 * 1000);
+    setTimeout(run, Math.min(3000, jobsConfig.tradeExpireMs)).unref();
+    this.timer = setInterval(run, jobsConfig.tradeExpireMs);
     this.timer.unref();
   }
 

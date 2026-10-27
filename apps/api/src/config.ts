@@ -42,3 +42,10 @@ export const economyConfig = {
   pityEpic: int('PITY_EPIC', 10),
   pityLegendary: int('PITY_LEGENDARY', 60),
 };
+
+/** Tâches de fond (règlement des enchères, expiration des offres). Coupées par défaut sous NODE_ENV=test. */
+export const jobsConfig = {
+  enabled: (process.env.BACKGROUND_JOBS ?? (process.env.NODE_ENV === 'test' ? 'off' : 'on')) !== 'off',
+  auctionSettleMs: int('AUCTION_SETTLE_SECONDS', 30) * 1000,
+  tradeExpireMs: int('TRADE_EXPIRE_SECONDS', 600) * 1000,
+};

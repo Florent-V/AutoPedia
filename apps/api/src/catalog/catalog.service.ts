@@ -49,6 +49,7 @@ export class CatalogService implements OnApplicationBootstrap {
       try {
         const result = await this.importData(source, limit);
         // Les photos et résumés sont rapatriés ensuite : le jeu est déjà jouable pendant ce temps.
+        if (process.env.MEDIA_SYNC === 'off') return result;
         await this.media.syncAll();
         this.logger.log(`Médias : ${JSON.stringify(await this.media.stats())}`);
         return result;

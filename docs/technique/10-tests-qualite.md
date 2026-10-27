@@ -3,7 +3,8 @@
 ## Tests automatisés
 
 ```bash
-cd apps/api && npm test          # Jest
+cd apps/api && npm test          # Jest (tests unitaires)
+cd apps/api && npm run test:e2e  # tests de bout en bout : vraie API + base PostgreSQL temporaire
 cd apps/api && npm run lint      # vérification TypeScript (tsc --noEmit)
 cd apps/web && npx nuxt typecheck
 ```
@@ -17,6 +18,8 @@ cd apps/web && npx nuxt typecheck
 | `shop/shop-rotation.spec.ts` | Stabilité dans l'heure, changement à l'heure suivante, aucune Commune répétée dans la journée, Légendaires sur 4 heures, une seule affaire par heure |
 | `catalog/media.spec.ts` | Extraction du nom de fichier Commons, nettoyage du HTML des auteurs |
 | `bots/bot-brain.spec.ts` | Valeur estimée (carte manquante, doublons, marque fétiche), jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
+
+Les tests de bout en bout (`test/e2e/`) rejouent automatiquement les scénarios métier et anti-triche ci-dessous : voir [Architecture DDD](13-architecture.md#tests-de-bout-en-bout).
 
 ## Vérifications réalisées pendant le développement
 
@@ -52,6 +55,5 @@ Ces scénarios ont été rejoués contre une vraie base PostgreSQL, en appelant 
 
 ## Pistes pour aller plus loin
 
-- Tests d'intégration automatisés (Jest + base PostgreSQL éphémère) reprenant les scénarios ci-dessus.
 - Tests de bout en bout Playwright dans la CI.
 - Intégration continue GitHub Actions : lint, tests et construction des images.

@@ -41,3 +41,4 @@ Cette documentation a deux volets :
 | 10 | [Tests et qualité](technique/10-tests-qualite.md) | Tests automatisés, vérifications manuelles |
 | 11 | [Évolutions possibles](technique/11-evolutions.md) | Pistes et dette connue |
 | 12 | [Bots : implémentation](technique/12-bots.md) | Boucle, personnalités, décisions, garde-fous |
+| 13 | [Architecture DDD et hexagonale](technique/13-architecture.md) | Contextes, couches, règles anti-triche, avancement de la refonte, tests de bout en bout |
