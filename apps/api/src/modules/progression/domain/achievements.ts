@@ -1,0 +1,91 @@
+import type { PlayerStats, StatKey } from '../../statistics/player-stats';
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+
+/** Crédits versés automatiquement au déblocage d'un succès, selon son palier. */
+export const TIER_REWARD: Record<BadgeTier, number> = { bronze: 50, silver: 150, gold: 400, platinum: 1000 };
+
+export interface AchievementDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: BadgeTier;
+  category: 'Boosters' | 'Collection' | 'Rareté' | 'Exploration' | 'Score' | 'Mini-jeux' | 'Marché' | 'Assiduité';
+  stat: StatKey;
+  goal: number;
+}
+
+const def = (
+  id: string,
+  category: AchievementDef['category'],
+  name: string,
+  description: string,
+  icon: string,
+  tier: BadgeTier,
+  stat: StatKey,
+  goal: number,
+): AchievementDef => ({ id, category, name, description, icon, tier, stat, goal });
+
+/** Catalogue des succès. Ajouter une entrée suffit : la progression est calculée à partir des statistiques. */
+export const ACHIEVEMENTS: AchievementDef[] = [
+  def('boosters-1', 'Boosters', 'Premier contact', 'Ouvrir votre premier booster', '🎁', 'bronze', 'boostersOpened', 1),
+  def('boosters-10', 'Boosters', 'Mise en route', 'Ouvrir 10 boosters', '🔑', 'bronze', 'boostersOpened', 10),
+  def('boosters-50', 'Boosters', 'Rodage terminé', 'Ouvrir 50 boosters', '⚙️', 'silver', 'boostersOpened', 50),
+  def('boosters-200', 'Boosters', 'Grand tourisme', 'Ouvrir 200 boosters', '🛣️', 'gold', 'boostersOpened', 200),
+  def('boosters-1000', 'Boosters', 'Million de kilomètres', 'Ouvrir 1 000 boosters', '🛞', 'platinum', 'boostersOpened', 1000),
+
+  def('unique-10', 'Collection', 'Petit garage', 'Posséder 10 cartes différentes', '🏠', 'bronze', 'uniqueCards', 10),
+  def('unique-50', 'Collection', 'Concession', 'Posséder 50 cartes différentes', '🏪', 'bronze', 'uniqueCards', 50),
+  def('unique-150', 'Collection', 'Parc automobile', 'Posséder 150 cartes différentes', '🅿️', 'silver', 'uniqueCards', 150),
+  def('unique-500', 'Collection', 'Musée de l’automobile', 'Posséder 500 cartes différentes', '🏛️', 'gold', 'uniqueCards', 500),
+  def('unique-1000', 'Collection', 'Encyclopédie vivante', 'Posséder 1 000 cartes différentes', '📚', 'platinum', 'uniqueCards', 1000),
+  def('duplicates-5', 'Collection', 'Flotte de société', 'Posséder 5 exemplaires d’une même carte', '🚕', 'bronze', 'maxQuantity', 5),
+
+  def('rare-1', 'Rareté', 'Coup de chance', 'Obtenir une carte Rare', '💎', 'bronze', 'rare', 1),
+  def('epic-1', 'Rareté', 'Pièce de collection', 'Obtenir une carte Épique', '🔮', 'silver', 'epic', 1),
+  def('legendary-1', 'Rareté', 'Légende vivante', 'Obtenir une carte Légendaire', '👑', 'gold', 'legendary', 1),
+  def('epic-10', 'Rareté', 'Salon privé', 'Posséder 10 cartes Épiques différentes', '🎩', 'gold', 'epic', 10),
+  def('legendary-5', 'Rareté', 'Panthéon', 'Posséder 5 cartes Légendaires différentes', '🏆', 'platinum', 'legendary', 5),
+
+  def('brand-5', 'Exploration', 'Fidèle à la marque', 'Posséder 5 cartes d’un même constructeur', '🔧', 'bronze', 'maxPerBrand', 5),
+  def('brand-15', 'Exploration', 'Spécialiste', 'Posséder 15 cartes d’un même constructeur', '🛠️', 'silver', 'maxPerBrand', 15),
+  def('countries-5', 'Exploration', 'Tour d’Europe', 'Posséder des voitures de 5 pays différents', '🗺️', 'bronze', 'countries', 5),
+  def('countries-12', 'Exploration', 'Tour du monde', 'Posséder des voitures de 12 pays différents', '🌍', 'silver', 'countries', 12),
+  def('racing-5', 'Exploration', 'Paddock', 'Posséder 5 voitures de course', '🏁', 'silver', 'racing', 5),
+  def('racing-20', 'Exploration', 'Écurie officielle', 'Posséder 20 voitures de course', '🏎️', 'gold', 'racing', 20),
+  def('decades-6', 'Exploration', 'Voyage dans le temps', 'Posséder des voitures de 6 décennies différentes', '⏳', 'silver', 'decades', 6),
+
+  def('games-1', 'Mini-jeux', 'Échauffement', 'Terminer une partie de mini-jeu', '🎮', 'bronze', 'gamesPlayed', 1),
+  def('games-25', 'Mini-jeux', 'Pilote d’essai', 'Terminer 25 parties de mini-jeux', '🕹️', 'silver', 'gamesPlayed', 25),
+  def('games-100', 'Mini-jeux', 'Encyclopédiste', 'Terminer 100 parties de mini-jeux', '🧠', 'gold', 'gamesPlayed', 100),
+  def('gamecards-10', 'Mini-jeux', 'Butin', 'Gagner 10 cartes dans les mini-jeux', '🎴', 'bronze', 'gameCardsWon', 10),
+  def('gamecards-100', 'Mini-jeux', 'Chasseur de trophées', 'Gagner 100 cartes dans les mini-jeux', '🏅', 'gold', 'gameCardsWon', 100),
+  def('jackpot-1', 'Mini-jeux', 'Bonne porte', 'Trouver la carte Épique ou Légendaire des 3 garages', '🚪', 'silver', 'doorsJackpots', 1),
+  def('credits-1000', 'Mini-jeux', 'Tirelire', 'Gagner 1 000 crédits au total', '💰', 'silver', 'creditsEarned', 1000),
+  def('credits-10000', 'Mini-jeux', 'Coffre-fort', 'Gagner 10 000 crédits au total', '🏦', 'gold', 'creditsEarned', 10000),
+
+  def('shop-1', 'Marché', 'Premier achat', 'Acheter une carte à la boutique', '🛒', 'bronze', 'shopPurchases', 1),
+  def('shop-10', 'Marché', 'Client fidèle', 'Acheter 10 cartes à la boutique', '🛍️', 'silver', 'shopPurchases', 10),
+  def('trades-1', 'Marché', 'Poignée de main', 'Conclure un échange à la bourse', '🤝', 'bronze', 'tradesCompleted', 1),
+  def('trades-10', 'Marché', 'Négociant', 'Conclure 10 échanges à la bourse', '📈', 'silver', 'tradesCompleted', 10),
+  def('trades-50', 'Marché', 'Courtier', 'Conclure 50 échanges à la bourse', '💼', 'gold', 'tradesCompleted', 50),
+
+  def('auction-won-1', 'Marché', 'Adjugé !', 'Remporter une enchère', '🔨', 'bronze', 'auctionsWon', 1),
+  def('auction-won-10', 'Marché', 'Collectionneur averti', 'Remporter 10 enchères', '🏛️', 'gold', 'auctionsWon', 10),
+  def('auction-sold-5', 'Marché', 'Commissaire-priseur', 'Vendre 5 cartes aux enchères', '📣', 'silver', 'auctionsSold', 5),
+
+  def('streak-3', 'Assiduité', 'Bonne habitude', 'Se connecter 3 jours d’affilée', '📅', 'bronze', 'bestStreak', 3),
+  def('streak-7', 'Assiduité', 'Habitué du garage', 'Se connecter 7 jours d’affilée', '🗓️', 'silver', 'bestStreak', 7),
+  def('streak-30', 'Assiduité', 'Fidèle au poste', 'Se connecter 30 jours d’affilée', '🔥', 'platinum', 'bestStreak', 30),
+
+  def('points-100', 'Score', 'Plein d’essence', 'Atteindre 100 points de collection', '⛽', 'bronze', 'points', 100),
+  def('points-1000', 'Score', 'Pole position', 'Atteindre 1 000 points de collection', '🥇', 'silver', 'points', 1000),
+  def('points-5000', 'Score', 'Champion du monde', 'Atteindre 5 000 points de collection', '🏎️', 'gold', 'points', 5000),
+];
+
+/** Succès atteints d'après les statistiques, parmi ceux pas encore débloqués. */
+export function reachedAchievements(stats: PlayerStats, unlocked: Iterable<string>): AchievementDef[] {
+  const done = new Set(unlocked);
+  return ACHIEVEMENTS.filter((a) => !done.has(a.id) && stats[a.stat] >= a.goal);
+}

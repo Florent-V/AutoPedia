@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } fr
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { AuthUser, CurrentUser } from '../auth/auth.guard';
-import { RARITIES } from '../game/rarity';
+import { RARITIES } from '../modules/catalog/domain/rarity';
 import { AuctionsService } from './auctions.service';
 
 class CreateAuctionDto {

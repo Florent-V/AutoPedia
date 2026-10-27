@@ -1,4 +1,4 @@
-import { zonedParts } from '../../src/game/zoned-time';
+import { zonedParts } from '../../src/shared/domain/zoned-time';
 import { creditsOf, db, newPlayer, statuses } from '../helpers';
 
 function parisDay(offsetDays: number) {

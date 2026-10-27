@@ -1,13 +1,13 @@
+import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { GameSession, GameType, Prisma, Rarity } from '@prisma/client';
 import { economyConfig } from '../config';
-import { AchievementsService } from '../achievements/achievements.service';
-import { BoostersService } from '../boosters/boosters.service';
-import { toCardDto } from '../cars/card.dto';
+import { AchievementsService } from '../modules/progression/application/achievements.service';
+import { CatalogReader } from '../modules/catalog/application/catalog-reader';
+import { toCardDto } from '../modules/catalog/application/card-view';
 import { addCard, lockPlayers, moveCredits } from '../economy/wallet';
-import { rollRarity } from '../game/rarity';
-import { startOfZonedDay } from '../game/zoned-time';
-import { PlayerService } from '../player/player.service';
+import { rollRarity } from '../modules/catalog/domain/rarity';
+import { startOfZonedDay } from '../shared/domain/zoned-time';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { DuelRound, makeDuelRound, makeMysteryRound, makeQuizRound, makeWeightRound, MysteryRound, QuizRound, WeightRound } from './questions';
 
@@ -121,8 +121,7 @@ const ABANDON_AFTER_MS = 60 * 60 * 1000;
 export class GamesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly players: PlayerService,
-    private readonly boosters: BoostersService,
+    private readonly catalog: CatalogReader,
     private readonly achievements: AchievementsService,
   ) {}
 
@@ -161,8 +160,7 @@ export class GamesService {
   }
 
   async start(userId: string, type: GameType) {
-    await this.players.ensure(this.prisma, userId);
-    return this.prisma.$transaction(
+    return legacyTransaction(
       async (tx) => {
         await lockPlayers(tx, userId);
         const now = new Date();
@@ -195,7 +193,7 @@ export class GamesService {
   }
 
   async answer(userId: string, id: string, choice: unknown) {
-    return this.prisma.$transaction(
+    return legacyTransaction(
       async (tx) => {
         // Verrou sur la partie : une seule réponse traitée par manche, même en cas de double clic.
         await tx.$queryRaw`SELECT 1 FROM "game_session" WHERE "id" = ${id} FOR UPDATE`;
@@ -253,7 +251,7 @@ export class GamesService {
         let rewardCard = null;
         if (finished && game.perfectBonus && score >= game.rounds) {
           // Sans-faute : une carte bonus (peu commune ou mieux).
-          const car = await this.boosters.pickCar(tx, rollRarity(true), []);
+          const car = await this.pickCar(tx, rollRarity(true), []);
           if (car) {
             const { quantity, isNew } = await addCard(tx, userId, car.id);
             rewardCard = { ...toCardDto(car), quantity, isNew };
@@ -278,7 +276,7 @@ export class GamesService {
             } as unknown as Prisma.InputJsonValue,
           },
         });
-        const newAchievements = finished ? await this.achievements.evaluate(tx, userId) : [];
+        const newAchievements = finished ? await this.achievements.evaluate(userId) : [];
         const balance = (await tx.player.findUniqueOrThrow({ where: { userId }, select: { credits: true } })).credits;
 
         return {
@@ -312,12 +310,18 @@ export class GamesService {
     }
   }
 
+  /** Carte au hasard de la rareté voulue (ou de la plus proche). */
+  private async pickCar(tx: Tx, rarity: Rarity, exclude: number[]) {
+    const drawn = await this.catalog.randomCar(rarity, exclude);
+    return drawn ? tx.car.findUnique({ where: { id: drawn.id } }) : null;
+  }
+
   /** Trois portes : une vide, une carte standard (Commune / Peu commune), une haut de gamme (Épique / Légendaire). */
   private async makeDoorsRound(tx: Tx): Promise<DoorsRound | null> {
     const standard: Rarity = Math.random() < 0.7 ? 'COMMON' : 'UNCOMMON';
     const top: Rarity = Math.random() < 0.8 ? 'EPIC' : 'LEGENDARY';
-    const s = await this.boosters.pickCar(tx, standard, []);
-    const t = await this.boosters.pickCar(tx, top, s ? [s.id] : []);
+    const s = await this.pickCar(tx, standard, []);
+    const t = await this.pickCar(tx, top, s ? [s.id] : []);
     if (!s || !t) return null;
     const outcomes: Door[] = [
       { tier: 'none', carId: null },

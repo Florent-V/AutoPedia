@@ -10,14 +10,14 @@ import { PrismaService } from './prisma/prisma.service';
 
 const PENDING = Symbol('pending-after-commit-events');
 
-export type PrismaTx = TransactionHost<TransactionalAdapterPrisma<PrismaService>>;
-
 /**
  * Unité de travail fondée sur nestjs-cls : la transaction Prisma est portée par le contexte
  * de la requête (ou de la tâche de fond), et les repositories l'utilisent via `TransactionHost.tx`.
  */
 @Injectable()
 export class ClsUnitOfWork extends UnitOfWork {
+  /** Instance unique, pour le pont de migration `legacyTransaction` (à supprimer à la fin de la refonte). */
+  static instance: ClsUnitOfWork | undefined;
   private readonly logger = new Logger('UnitOfWork');
 
   constructor(
@@ -26,6 +26,12 @@ export class ClsUnitOfWork extends UnitOfWork {
     private readonly emitter: EventEmitter2,
   ) {
     super();
+    ClsUnitOfWork.instance = this;
+  }
+
+  /** Client Prisma de la transaction en cours. */
+  get tx() {
+    return this.txHost.tx;
   }
 
   run<T>(work: () => Promise<T>): Promise<T> {

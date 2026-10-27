@@ -1,0 +1,85 @@
+import { Injectable } from '@nestjs/common';
+import { Db as TxHost } from '../../shared/infrastructure/prisma/transaction';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { RARITY_INFO } from '../catalog/domain/rarity';
+
+import { PlayerStats } from './player-stats';
+
+export type { PlayerStats };
+
+type Db = PrismaClient | Prisma.TransactionClient;
+
+/** Calcule les statistiques de collection d'un joueur en une requête. */
+export async function computePlayerStats(db: Db, userId: string): Promise<PlayerStats> {
+  const effectiveRarity = Prisma.sql`COALESCE(c."rarityOverride", c."rarity")`;
+  const points = Prisma.raw(
+    `CASE ${Object.entries(RARITY_INFO)
+      .map(([r, info]) => `WHEN COALESCE(c."rarityOverride", c."rarity") = '${r}' THEN ${info.points}`)
+      .join(' ')} ELSE 0 END`,
+  );
+
+  const [row] = await db.$queryRaw<Array<Record<string, bigint | number | null>>>`
+    SELECT
+      COUNT(*)                                                    AS "uniqueCards",
+      COALESCE(SUM(${points}), 0)                                 AS "points",
+      COUNT(*) FILTER (WHERE ${effectiveRarity} = 'COMMON')       AS "common",
+      COUNT(*) FILTER (WHERE ${effectiveRarity} = 'UNCOMMON')     AS "uncommon",
+      COUNT(*) FILTER (WHERE ${effectiveRarity} = 'RARE')         AS "rare",
+      COUNT(*) FILTER (WHERE ${effectiveRarity} = 'EPIC')         AS "epic",
+      COUNT(*) FILTER (WHERE ${effectiveRarity} = 'LEGENDARY')    AS "legendary",
+      COUNT(*) FILTER (WHERE c."racing")                          AS "racing",
+      COUNT(DISTINCT c."country")                                 AS "countries",
+      COUNT(DISTINCT (c."yearStart" / 10))                        AS "decades",
+      COALESCE(MAX(uc."quantity"), 0)                             AS "maxQuantity"
+    FROM "user_card" uc
+    JOIN "car" c ON c."id" = uc."carId"
+    WHERE uc."userId" = ${userId}`;
+
+  const [brand] = await db.$queryRaw<Array<{ n: bigint }>>`
+    SELECT COALESCE(MAX(n), 0) AS n FROM (
+      SELECT COUNT(*) AS n FROM "user_card" uc
+      JOIN "car" c ON c."id" = uc."carId"
+      WHERE uc."userId" = ${userId} AND c."manufacturer" IS NOT NULL
+      GROUP BY c."manufacturer"
+    ) t`;
+
+  const player = await db.player.findUnique({ where: { userId } });
+  const num = (v: unknown) => Number(v ?? 0);
+
+  return {
+    boostersOpened: player?.boostersOpened ?? 0,
+    cardsObtained: player?.cardsObtained ?? 0,
+    uniqueCards: num(row?.uniqueCards),
+    points: num(row?.points),
+    common: num(row?.common),
+    uncommon: num(row?.uncommon),
+    rare: num(row?.rare),
+    epic: num(row?.epic),
+    legendary: num(row?.legendary),
+    racing: num(row?.racing),
+    maxPerBrand: num(brand?.n),
+    countries: num(row?.countries),
+    decades: num(row?.decades),
+    maxQuantity: num(row?.maxQuantity),
+    credits: player?.credits ?? 0,
+    creditsEarned: player?.creditsEarned ?? 0,
+    gamesPlayed: player?.gamesPlayed ?? 0,
+    tradesCompleted: player?.tradesCompleted ?? 0,
+    shopPurchases: player?.shopPurchases ?? 0,
+    gameCardsWon: player?.gameCardsWon ?? 0,
+    doorsJackpots: player?.doorsJackpots ?? 0,
+    auctionsWon: player?.auctionsWon ?? 0,
+    auctionsSold: player?.auctionsSold ?? 0,
+    bestStreak: player?.bestStreak ?? 0,
+  };
+}
+
+/** Lecture des statistiques d'un joueur (dans la transaction en cours s'il y en a une). */
+@Injectable()
+export class PlayerStatsQuery {
+  constructor(private readonly db: TxHost) {}
+
+  forUser(userId: string) {
+    return computePlayerStats(this.db.tx, userId);
+  }
+}

@@ -1,14 +1,15 @@
+import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { economyConfig } from '../config';
 import { AuctionsService, minBid } from '../auctions/auctions.service';
-import { BoostersService } from '../boosters/boosters.service';
-import { effectiveRarity } from '../cars/card.dto';
-import { DailyService } from '../daily/daily.service';
+import { PlayerProvisioning } from '../modules/player/application/player-provisioning';
+import { BoostersService } from '../modules/collection/application/boosters.service';
+import { effectiveRarity } from '../modules/catalog/application/card-view';
+import { DailyRewardService } from '../modules/progression/application/daily-reward.service';
 import { moveCredits } from '../economy/wallet';
-import { zonedParts } from '../game/zoned-time';
-import { PlayerService } from '../player/player.service';
+import { zonedParts } from '../shared/domain/zoned-time';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { TradesService } from '../trades/trades.service';
 import {
@@ -51,9 +52,9 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly players: PlayerService,
     private readonly boosters: BoostersService,
-    private readonly daily: DailyService,
+    private readonly daily: DailyRewardService,
+    private readonly provisioning: PlayerProvisioning,
     private readonly auctions: AuctionsService,
     private readonly trades: TradesService,
   ) {}
@@ -130,7 +131,7 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.user.create({
         data: { id, name, email: `${id}@bots.garage.invalid`, emailVerified: false },
       });
-      await this.players.ensure(this.prisma, id);
+      await this.provisioning.ensure(id);
       await this.prisma.player.update({
         where: { userId: id },
         data: {
@@ -160,7 +161,7 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
     if (!status.canClaim) return;
     await this.daily.claim(botId);
     const income = Math.round(rand(80, 320));
-    await this.prisma.$transaction((tx) => moveCredits(tx, botId, income, 'bot:jeux'));
+    await legacyTransaction((tx) => moveCredits(tx, botId, income, 'bot:jeux'));
   }
 
   private async openBoosters(botId: string) {

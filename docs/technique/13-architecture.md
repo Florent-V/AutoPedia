@@ -26,7 +26,9 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | `shared` | Noyau partagé : transactions, événements, erreurs métier, horloge, aléatoire | `DomainError`, `Credits`, `Clock` |
 | `wallet` | Solde et journal des crédits | `Wallet` |
 | `collection` | Cartes possédées, boosters, tirage, garanties | `BoosterReserve`, `Draw` |
-| `progression` | Succès, récompense quotidienne, statistiques | `DailyStreak`, définitions des succès |
+| `player` | Création de la fiche joueur à la première requête, profil composé `/me` | `PlayerProvisioning` |
+| `statistics` | Modèle de lecture des statistiques d'un joueur (affichage et succès) | `PlayerStatsQuery` |
+| `progression` | Succès et leurs récompenses, récompense quotidienne | `DailyStreak`, définitions des succès |
 | `games` | Mini-jeux | `GameSession`, `QuestionFactory` (port) |
 | `marketplace` | Boutique, bourse, enchères | `ShopOffer`, `TradeOffer`, `Auction` |
 | `catalog` | Cartes, import Wikidata, photos | `Car` |
@@ -39,8 +41,8 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | --- | --- | --- |
 | 0 | Suite de tests de bout en bout (vraie API, vraie base) qui rejoue les scénarios métier et anti-triche | ✅ |
 | 1 | Socle partagé : transactions (CLS), événements de domaine, erreurs métier, durcissement HTTP | ✅ |
-| 2 | Contextes `wallet` et `collection` | ⏳ |
-| 3 | Contexte `progression` | ⏳ |
+| 2 | Contextes `wallet`, `collection`, `player` et `statistics` | ✅ |
+| 3 | Contexte `progression` (succès par événements, récompense quotidienne) | ✅ |
 | 4 | Contexte `games` | ⏳ |
 | 5 | Contexte `marketplace` | ⏳ |
 | 6 | Contextes `catalog`, `notifications` et `bots`, nettoyage final | ⏳ |
@@ -60,6 +62,26 @@ La suite de bout en bout doit rester verte à chaque étape.
 | `http/domain-error.filter.ts` | Traduit les erreurs métier en réponses HTTP ; une violation d'unicité en base (double requête) devient un 409 |
 | `http/user-throttler.guard.ts` | Limitation de débit par joueur |
 
+## Exemple : ouverture d'un booster
+
+```
+POST /api/boosters/open                               (aucun paramètre accepté)
+  BoostersController            http/          compose la réponse (vues des cartes, statistiques)
+  └─ BoostersService.open       application/   unité de travail + verrou joueur
+       ├─ BoosterReserve        domain/        régénération, réserve vide → RuleViolation (409), garanties
+       ├─ rollBoosterRarities   domain/        raretés des 5 emplacements (aléatoire cryptographique)
+       ├─ CardsService.draw     application/   → port CarPool → adaptateur vers CatalogReader
+       ├─ CardsService.grant    application/   → port OwnedCards → Prisma
+       └─ EventBus.publish(BoosterOpened)
+            └─ ProgressionHandlers   (même transaction) → AchievementsService.evaluate
+                 └─ WalletService.credit (récompense) → agrégat Wallet → journal
+  NewAchievementsInterceptor    http/          ajoute newAchievements à la réponse
+```
+
+## Pont de migration
+
+Les services pas encore migrés (`games`, `shop`, `trades`, `auctions`, `bots`) passent par `legacyTransaction()`. Ils s'exécutent ainsi dans l'unité de travail et partagent leur transaction avec les nouveaux services qu'ils appellent. Sans ce pont, deux connexions se disputeraient le verrou du joueur. Le pont disparaît avec la dernière étape.
+
 ## Tests de bout en bout
 
 ```bash
@@ -68,6 +90,7 @@ cd apps/api && npm run test:e2e
 
 - `test/global-setup.ts` crée une base temporaire `garage_e2e_<horodatage>_<pid>` sur le serveur de `E2E_DATABASE_URL` (ou de `DATABASE_URL`). Il y applique les migrations (`prisma migrate deploy`), importe le jeu de cartes de secours et lance l'API compilée sur le port 3101.
 - Pour ce lancement, le serveur tourne avec les tâches de fond accélérées (règlement des enchères et expiration des offres toutes les secondes), sans bots, sans import ni appel réseau sortant.
+- Le journal du serveur de test est écrit dans `test/.logs/api.log`.
 - `test/global-teardown.ts` arrête l'API puis supprime **uniquement** la base créée par ce lancement (`E2E_KEEP_DB=1` pour la garder). Aucune base existante n'est modifiée.
 - Les tests passent par l'API comme un vrai client (cookies de session). La base n'est utilisée que pour préparer un état (solde, date d'expiration) et vérifier le résultat.
 
@@ -80,4 +103,5 @@ cd apps/api && npm run test:e2e
 | `trades` | Séquestre, double acceptation, échange carte contre carte, validation des contreparties, annulation, expiration |
 | `auctions` | Crédits bloqués, remboursement, minimum de surenchère, anti « dernière seconde », règlement, invendu, validation |
 | `daily` | Une réclamation par jour même en rafale, carte du 7ᵉ jour, série remise à 1 |
+| `progression` | Succès signalés dans la réponse et payés une seule fois (rafales d'ouvertures et de consultations), journal du portefeuille |
 | `zz-invariants` | Pour chaque joueur, solde = crédits de départ + somme du journal ; aucun solde ni aucune quantité négatifs |

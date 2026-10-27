@@ -13,6 +13,7 @@ export class SystemClock extends Clock {
 @Injectable()
 export class CryptoRandom extends RandomSource {
   next() {
-    return randomInt(0, 2 ** 48) / 2 ** 48;
+    // randomInt accepte un écart d'au plus 2^48 - 1 ; résultat dans [0, 1[.
+    return randomInt(0, 2 ** 48 - 1) / 2 ** 48;
   }
 }

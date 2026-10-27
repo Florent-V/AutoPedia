@@ -1,6 +1,6 @@
 import { Car, Prisma, Rarity } from '@prisma/client';
-import { rollRarity } from '../game/rarity';
-import { imageUrlOf } from '../cars/card.dto';
+import { rollRarity } from '../modules/catalog/domain/rarity';
+import { imageUrlOf } from '../modules/catalog/application/card-view';
 
 type Tx = Prisma.TransactionClient;
 

@@ -1,12 +1,12 @@
+import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Rarity } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { economyConfig } from '../config';
-import { AchievementsService } from '../achievements/achievements.service';
-import { toCardDto } from '../cars/card.dto';
+import { AchievementsService } from '../modules/progression/application/achievements.service';
+import { toCardDto } from '../modules/catalog/application/card-view';
 import { addCard, lockPlayers, moveCredits } from '../economy/wallet';
-import { nextZonedHour, zonedParts } from '../game/zoned-time';
-import { PlayerService } from '../player/player.service';
+import { nextZonedHour, zonedParts } from '../shared/domain/zoned-time';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { offersAt, SHOP_RULES } from './shop-rotation';
 
@@ -21,7 +21,6 @@ const SECRET =
 export class ShopService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly players: PlayerService,
     private readonly achievements: AchievementsService,
   ) {}
 
@@ -35,7 +34,7 @@ export class ShopService {
   }
 
   async list(userId: string) {
-    const player = await this.players.ensure(this.prisma, userId);
+    const player = await this.prisma.player.findUniqueOrThrow({ where: { userId } });
     const now = new Date();
     const { date, hour, offers } = await this.currentOffers(this.prisma, now);
     const [cars, purchases, owned] = await Promise.all([
@@ -69,8 +68,7 @@ export class ShopService {
   }
 
   async buy(userId: string, offerKey: string) {
-    await this.players.ensure(this.prisma, userId);
-    return this.prisma.$transaction(
+    return legacyTransaction(
       async (tx) => {
         await lockPlayers(tx, userId);
         const { offers } = await this.currentOffers(tx);
@@ -84,7 +82,7 @@ export class ShopService {
         const { quantity, isNew } = await addCard(tx, userId, offer.carId);
         await tx.player.update({ where: { userId }, data: { shopPurchases: { increment: 1 } } });
         const car = await tx.car.findUniqueOrThrow({ where: { id: offer.carId } });
-        const newAchievements = await this.achievements.evaluate(tx, userId);
+        const newAchievements = await this.achievements.evaluate(userId);
         return { card: { ...toCardDto(car), quantity, isNew }, balance, newAchievements };
       },
       { timeout: 15_000 },

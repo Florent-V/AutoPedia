@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { fetchWikiSummary } from '../catalog/http';
-import { imageCreditOf, toCardDto } from './card.dto';
+import { imageCreditOf, toCardDto } from '../modules/catalog/application/card-view';
 
 const SUMMARY_TTL_MS = 30 * 24 * 3600 * 1000;
 

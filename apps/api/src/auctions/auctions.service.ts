@@ -1,3 +1,4 @@
+import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import {
   BadRequestException,
   ConflictException,
@@ -10,10 +11,9 @@ import {
 } from '@nestjs/common';
 import { Auction, Prisma } from '@prisma/client';
 import { economyConfig, jobsConfig } from '../config';
-import { AchievementsService } from '../achievements/achievements.service';
-import { toCardDto } from '../cars/card.dto';
+import { AchievementsService } from '../modules/progression/application/achievements.service';
+import { toCardDto } from '../modules/catalog/application/card-view';
 import { addCard, lockPlayers, moveCredits, removeCard } from '../economy/wallet';
-import { PlayerService } from '../player/player.service';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { PushService } from '../push/push.service';
 
@@ -41,7 +41,6 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly players: PlayerService,
     private readonly achievements: AchievementsService,
     private readonly push: PushService,
   ) {}
@@ -62,8 +61,7 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
     if (!economyConfig.auctionDurations.includes(input.durationHours)) {
       throw new BadRequestException(`Durée invalide (${economyConfig.auctionDurations.join(', ')} heures)`);
     }
-    await this.players.ensure(this.prisma, userId);
-    return this.prisma.$transaction(async (tx) => {
+    return legacyTransaction(async (tx) => {
       await lockPlayers(tx, userId);
       const open = await tx.auction.count({ where: { sellerId: userId, status: 'OPEN' } });
       if (open >= economyConfig.maxOpenAuctions) {
@@ -84,8 +82,7 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async bid(userId: string, id: string, amount: number) {
-    await this.players.ensure(this.prisma, userId);
-    const result = await this.prisma.$transaction(
+    const result = await legacyTransaction(
       async (tx) => {
         const auction = await this.lockAuction(tx, id);
         const now = new Date();
@@ -135,7 +132,7 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async cancel(userId: string, id: string) {
-    return this.prisma.$transaction(async (tx) => {
+    return legacyTransaction(async (tx) => {
       const auction = await this.lockAuction(tx, id);
       if (auction.sellerId !== userId) throw new ForbiddenException('Cette enchère ne vous appartient pas');
       if (auction.bidCount > 0) throw new ConflictException('Impossible d’annuler : une offre a déjà été faite');
@@ -176,7 +173,7 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
         include: { car: true, seller: userSelect, bidder: userSelect },
       }),
       this.prisma.userCard.findMany({ where: { userId }, select: { carId: true, quantity: true } }),
-      this.players.ensure(this.prisma, userId),
+      this.prisma.player.findUniqueOrThrow({ where: { userId } }),
     ]);
     const qty = new Map(owned.map((o) => [o.carId, o.quantity]));
     return {
@@ -212,7 +209,7 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
     });
     for (const { id } of due) {
       try {
-        const done = await this.prisma.$transaction((tx) => this.settle(tx, id), { timeout: 15_000 });
+        const done = await legacyTransaction((tx) => this.settle(tx, id), { timeout: 15_000 });
         if (done?.status === 'SOLD') {
           void this.push
             .sendToUser(done.bidderId!, {
@@ -253,8 +250,8 @@ export class AuctionsService implements OnModuleInit, OnModuleDestroy {
     await moveCredits(tx, auction.sellerId, auction.currentBid! - fee, 'auction:sale', auction.id);
     await tx.player.update({ where: { userId: auction.bidderId }, data: { auctionsWon: { increment: 1 } } });
     await tx.player.update({ where: { userId: auction.sellerId }, data: { auctionsSold: { increment: 1 } } });
-    await this.achievements.evaluate(tx, auction.bidderId);
-    await this.achievements.evaluate(tx, auction.sellerId);
+    await this.achievements.evaluate(auction.bidderId);
+    await this.achievements.evaluate(auction.sellerId);
     return tx.auction.update({ where: { id }, data: { status: 'SOLD', closedAt }, include: { car: true } });
   }
 

@@ -23,3 +23,11 @@ export abstract class Clock {
 export abstract class RandomSource {
   abstract next(): number;
 }
+
+/**
+ * Verrou par joueur (ligne « player », `FOR UPDATE`) : toute action qui modifie l'état d'un joueur le prend d'abord,
+ * dans la transaction en cours. Plusieurs joueurs sont toujours verrouillés dans le même ordre (pas d'interblocage).
+ */
+export abstract class PlayerLocks {
+  abstract lock(...userIds: string[]): Promise<void>;
+}

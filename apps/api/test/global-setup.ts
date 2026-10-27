@@ -1,4 +1,5 @@
 import { ChildProcess, execFileSync, spawn } from 'node:child_process';
+import { createWriteStream, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { API_DIR, E2E_API, serverDatabaseUrl, serverEnv, withDatabase } from './env';
@@ -35,9 +36,16 @@ export default async function globalSetup() {
     "topSpeedKmh" = 120 + ("id" * 29) % 220, "lengthMm" = 3000 + ("id" * 71) % 2200`;
   await db.$disconnect();
   globalThis.__E2E_SERVER__ = spawn('node', [join('dist', 'main')], { cwd: API_DIR, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  // Journal du serveur de test : test/.logs/api.log (utile pour comprendre une erreur 500).
+  mkdirSync(join(API_DIR, 'test', '.logs'), { recursive: true });
+  const logFile = createWriteStream(join(API_DIR, 'test', '.logs', 'api.log'));
   const logs: string[] = [];
-  globalThis.__E2E_SERVER__.stdout?.on('data', (d) => logs.push(String(d)));
-  globalThis.__E2E_SERVER__.stderr?.on('data', (d) => logs.push(String(d)));
+  for (const stream of [globalThis.__E2E_SERVER__.stdout, globalThis.__E2E_SERVER__.stderr]) {
+    stream?.on('data', (d) => {
+      logs.push(String(d));
+      logFile.write(d);
+    });
+  }
 
   for (let i = 0; i < 100; i++) {
     try {

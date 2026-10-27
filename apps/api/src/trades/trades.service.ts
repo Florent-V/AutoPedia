@@ -1,3 +1,4 @@
+import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import {
   BadRequestException,
   ConflictException,
@@ -10,10 +11,9 @@ import {
 } from '@nestjs/common';
 import { Prisma, TradeOffer } from '@prisma/client';
 import { economyConfig, jobsConfig } from '../config';
-import { AchievementsService } from '../achievements/achievements.service';
-import { toCardDto } from '../cars/card.dto';
+import { AchievementsService } from '../modules/progression/application/achievements.service';
+import { toCardDto } from '../modules/catalog/application/card-view';
 import { addCard, lockPlayers, moveCredits, removeCard } from '../economy/wallet';
-import { PlayerService } from '../player/player.service';
 import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
 import { PushService } from '../push/push.service';
 
@@ -39,7 +39,6 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly players: PlayerService,
     private readonly achievements: AchievementsService,
     private readonly push: PushService,
   ) {}
@@ -61,9 +60,8 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Indiquez soit une carte demandée en échange, soit un prix en crédits');
     }
     if (input.wantedCarId === input.offeredCarId) throw new BadRequestException('Impossible d’échanger une carte contre elle-même');
-    await this.players.ensure(this.prisma, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return legacyTransaction(async (tx) => {
       await lockPlayers(tx, userId);
       const open = await tx.tradeOffer.count({ where: { sellerId: userId, status: 'OPEN' } });
       if (open >= economyConfig.maxOpenTrades) {
@@ -89,7 +87,7 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async cancel(userId: string, id: string) {
-    return this.prisma.$transaction(async (tx) => {
+    return legacyTransaction(async (tx) => {
       const offer = await this.lockOffer(tx, id);
       if (offer.sellerId !== userId) throw new ForbiddenException('Cette offre ne vous appartient pas');
       await this.close(tx, offer, 'CANCELLED');
@@ -98,8 +96,7 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async accept(userId: string, id: string) {
-    await this.players.ensure(this.prisma, userId);
-    const result = await this.prisma.$transaction(
+    const result = await legacyTransaction(
       async (tx) => {
         const offer = await this.lockOffer(tx, id);
         if (offer.sellerId === userId) throw new BadRequestException('Vous ne pouvez pas accepter votre propre offre');
@@ -119,9 +116,9 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
 
         const [car, newAchievements] = await Promise.all([
           tx.car.findUniqueOrThrow({ where: { id: offer.offeredCarId } }),
-          this.achievements.evaluate(tx, userId),
+          this.achievements.evaluate(userId),
         ]);
-        await this.achievements.evaluate(tx, offer.sellerId);
+        await this.achievements.evaluate(offer.sellerId);
         const balance = (await tx.player.findUniqueOrThrow({ where: { userId }, select: { credits: true } })).credits;
         return { offer, card: { ...toCardDto(car), quantity, isNew }, balance, newAchievements };
       },
@@ -151,7 +148,7 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
       // Offres intéressantes : la carte proposée me manque, et je peux payer ou je possède la carte demandée.
       const [owned, player] = await Promise.all([
         this.prisma.userCard.findMany({ where: { userId }, select: { carId: true } }),
-        this.players.ensure(this.prisma, userId),
+        this.prisma.player.findUniqueOrThrow({ where: { userId } }),
       ]);
       const ownedIds = owned.map((o) => o.carId);
       and.push({ offeredCarId: { notIn: ownedIds } });
@@ -181,7 +178,7 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
         include: { offeredCar: true, wantedCar: true, seller: { select: { name: true, player: { select: { isBot: true } } } } },
       }),
       this.prisma.userCard.findMany({ where: { userId }, select: { carId: true, quantity: true } }),
-      this.players.ensure(this.prisma, userId),
+      this.prisma.player.findUniqueOrThrow({ where: { userId } }),
     ]);
     const qty = new Map(owned.map((o) => [o.carId, o.quantity]));
     return {
@@ -211,8 +208,7 @@ export class TradesService implements OnModuleInit, OnModuleDestroy {
   async expire() {
     const expired = await this.prisma.tradeOffer.findMany({ where: { status: 'OPEN', expiresAt: { lte: new Date() } }, select: { id: true } });
     for (const { id } of expired) {
-      await this.prisma
-        .$transaction(async (tx) => this.close(tx, await this.lockOffer(tx, id), 'CANCELLED'))
+      await legacyTransaction(async (tx) => this.close(tx, await this.lockOffer(tx, id), 'CANCELLED'))
         .catch(() => undefined);
     }
     if (expired.length) this.logger.log(`Offres expirées : ${expired.length}`);
