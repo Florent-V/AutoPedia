@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Inject, Injectable, SetMetadata, Unautho
 import { Reflector } from '@nestjs/core';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
-import { AUTH, type Auth } from './auth';
+import { AUTH, type Auth } from '../infrastructure/better-auth';
 
 export const IS_PUBLIC = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC, true);

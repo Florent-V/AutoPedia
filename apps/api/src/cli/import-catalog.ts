@@ -1,11 +1,12 @@
 import '../env';
 import { NestFactory } from '@nestjs/core';
 import { Logger, Module } from '@nestjs/common';
-import { PrismaModule } from '../shared/infrastructure/prisma/prisma.module';
-import { CatalogService } from '../catalog/catalog.service';
-import { MediaService } from '../catalog/media.service';
+import { SharedModule } from '../shared/shared.module';
+import { CatalogModule } from '../modules/catalog/catalog.module';
+import { CatalogImportService } from '../modules/catalog/application/catalog-import.service';
+import { MediaSyncService } from '../modules/catalog/application/media-sync.service';
 
-@Module({ imports: [PrismaModule], providers: [CatalogService, MediaService] })
+@Module({ imports: [SharedModule, CatalogModule] })
 class CliModule {}
 
 /**
@@ -19,8 +20,8 @@ async function main() {
   process.env.CATALOG_AUTO_IMPORT = 'off';
   const app = await NestFactory.createApplicationContext(CliModule, { logger: ['log', 'warn', 'error'] });
   const mode = process.argv[2] ?? 'wikidata';
-  const catalog = app.get(CatalogService);
-  const media = app.get(MediaService);
+  const catalog = app.get(CatalogImportService);
+  const media = app.get(MediaSyncService);
   if (mode === 'media') await media.syncAll();
   else if (mode === 'seed' || mode === 'wikidata') {
     const limit = Number(process.argv[3] ?? process.env.CATALOG_IMPORT_LIMIT ?? 3000);

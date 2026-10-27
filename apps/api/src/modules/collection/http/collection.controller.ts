@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { CollectionQueryService } from '../application/collection.query';
 import { CollectionQueryDto } from './collection-query.dto';
 

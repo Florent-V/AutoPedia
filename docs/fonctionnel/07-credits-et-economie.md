@@ -38,4 +38,4 @@ Chaque mouvement est enregistré : date, montant, motif (« Duel de stats », «
 
 ## Leviers de réglage
 
-Tous ces paramètres se règlent sans toucher au code : `STARTING_CREDITS`, `GAMES_PER_DAY`, gains par bonne réponse (`economyConfig` dans `apps/api/src/config.ts`), prix de la boutique (`SHOP_RULES` dans `apps/api/src/shop/shop-rotation.ts`).
+Tous ces paramètres se règlent sans toucher au code : `STARTING_CREDITS`, `GAMES_PER_DAY`, gains par bonne réponse (`economyConfig` dans `apps/api/src/config.ts`), prix de la boutique (`SHOP_RULES` dans `apps/api/src/modules/marketplace/domain/shop-rotation.ts`).

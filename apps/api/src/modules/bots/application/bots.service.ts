@@ -141,11 +141,18 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
         data: {
           isBot: true,
           botProfile: profile as unknown as Prisma.InputJsonValue,
-          credits: botConfig.startCredits,
           // Arrivées échelonnées sur l'heure qui suit.
           botNextActionAt: new Date(Date.now() + rand(0, 60) * 60_000),
         },
       });
+      // Dotation de départ au-delà des crédits de bienvenue : passe par le portefeuille (journal).
+      const bonus = botConfig.startCredits - economyConfig.startingCredits;
+      if (bonus > 0) {
+        await this.uow.run(async () => {
+          await this.locks.lock(id);
+          await this.wallet.credit(id, bonus, 'bot:dotation');
+        });
+      }
       this.logger.log(`Bot créé : ${name} (${style}${profile.favoriteBrand ? `, fan de ${profile.favoriteBrand}` : ''})`);
     }
   }

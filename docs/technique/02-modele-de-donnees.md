@@ -80,8 +80,8 @@ La ligne `player` est créée à la première requête du joueur (`upsert`), ave
 | Invariant | Mécanisme |
 | --- | --- |
 | Un booster ne peut pas être ouvert deux fois | Verrou `FOR UPDATE` sur `player` |
-| Le solde ne devient jamais négatif | Vérification sous verrou dans `moveCredits` |
-| Chaque mouvement de crédits est journalisé | `moveCredits` est le seul point d'écriture de `credits` |
+| Le solde ne devient jamais négatif | Objet-valeur `Credits` dans l'agrégat `Wallet`, sous verrou joueur, avec contrôle de concurrence optimiste à l'écriture |
+| Chaque mouvement de crédits est journalisé | `WalletService` (agrégat `Wallet`) est le seul point d'écriture de `credits` ; vérifié par les tests de bout en bout (solde = départ + journal) |
 | Une carte en bourse n'existe qu'une fois | Séquestre : retirée de `user_card` à la publication |
 | Une offre n'est acceptée qu'une fois | Verrou `FOR UPDATE` sur `trade_offer` + vérification du statut |
 | Les crédits d'une enchère ne sont jamais dépensés deux fois | Prélevés à l'offre, rendus au surenchéri dans la même transaction (verrou sur `auction` et sur les deux joueurs) |
@@ -89,4 +89,4 @@ La ligne `player` est créée à la première requête du joueur (`upsert`), ave
 | La récompense du jour n'est réclamée qu'une fois | Verrou joueur + comparaison de `lastDailyClaim` avec la date du jour |
 | Une offre de boutique n'est achetée qu'une fois par joueur | Contrainte d'unicité `(userId, offerKey)` |
 | Une manche de mini-jeu n'est jouée qu'une fois | Verrou `FOR UPDATE` sur `game_session` |
-| Pas d'interblocage entre deux joueurs | Verrous toujours pris dans l'ordre des identifiants (`lockPlayers`) |
+| Pas d'interblocage entre deux joueurs | Verrous toujours pris dans l'ordre des identifiants (`PlayerLocks`) ; offre ou enchère verrouillée avant les joueurs |

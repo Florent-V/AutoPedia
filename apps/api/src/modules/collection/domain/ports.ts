@@ -19,4 +19,5 @@ export abstract class OwnedCards {
   /** Retire un exemplaire ; renvoie false si le joueur ne possède pas la carte. */
   abstract remove(userId: string, carId: number): Promise<boolean>;
   abstract quantity(userId: string, carId: number): Promise<number>;
+  abstract ownership(userId: string, carId: number): Promise<{ quantity: number; firstObtainedAt: Date | null }>;
 }

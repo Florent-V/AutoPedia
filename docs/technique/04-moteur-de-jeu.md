@@ -1,8 +1,8 @@
 # 4. Moteur de jeu
 
-La logique de jeu est faite de **fonctions pures** regroupées dans `apps/api/src/game/` et couvertes par des tests unitaires. Les services ne font qu'orchestrer : verrous, lecture, appel des règles, écriture.
+La logique de jeu est faite d'**agrégats** et de **fonctions pures** (couches `domain/` des contextes `collection` et `catalog`), couvertes par des tests unitaires. Les services ne font qu'orchestrer : verrous, lecture, appel des règles, écriture.
 
-## Horloge des boosters (`booster-clock.ts`)
+## Horloge des boosters (`collection/domain/booster-clock.ts`, agrégat `BoosterReserve`)
 
 Aucune tâche planifiée ne distribue les boosters. L'état stocké se résume à **deux valeurs** :
 
@@ -24,13 +24,13 @@ prochainBooster = ancre + intervalle
 
 Avantages : aucun cron, aucune dérive, et un résultat exact même après des semaines d'absence. Le front reçoit `nextAt` et l'heure du serveur, et calcule l'écart d'horloge pour afficher un compte à rebours juste.
 
-## Tirage (`rarity.ts`)
+## Tirage (`catalog/domain/rarity.ts`, `collection/domain/booster-draw.ts`)
 
 1. `rollBoosterRarities(5, random, pity)` tire une rareté par emplacement :
    - emplacements 1 à 4 : poids `dropWeight` (62 / 26 / 9 / 2,5 / 0,5) ;
    - emplacement 5 (vedette) : poids `featuredWeight` (0 / 55 / 33 / 9,5 / 2,5).
 2. **Garantie** : `pityFor(sinceEpic, sinceLegendary, 10, 60)` indique si ce booster doit contenir une Épique ou une Légendaire. Si le tirage ne la contient pas déjà, la carte vedette est remplacée : par une Légendaire si la garantie Légendaire est active, sinon par une Épique (80 %) ou une Légendaire (20 %).
-3. Pour chaque rareté tirée, `pickCar` choisit une voiture au hasard (`ORDER BY random()`) parmi les cartes actives de cette rareté, en excluant celles déjà tirées dans le booster. S'il n'y en a pas, il se rabat sur la rareté la plus proche. Les doublons ne sont autorisés qu'en dernier recours, pour les tout petits catalogues.
+3. Pour chaque rareté tirée, `CatalogReader.randomCar` choisit une voiture au hasard (`ORDER BY random()`) parmi les cartes actives de cette rareté, en excluant celles déjà tirées dans le booster. S'il n'y en a pas, il se rabat sur la rareté la plus proche. Les doublons ne sont autorisés qu'en dernier recours, pour les tout petits catalogues.
 4. Les compteurs `sinceEpic` et `sinceLegendary` sont remis à zéro ou incrémentés selon le résultat.
 
 L'aléatoire du tirage utilise `Math.random()` côté serveur. Un aléatoire cryptographique n'apporterait rien ici : le client ne voit jamais l'état du générateur.
@@ -47,7 +47,7 @@ Tout se passe dans **une seule transaction** :
 2. Calcul de la réserve, puis refus (409) si elle est vide.
 3. Tirage avec garantie.
 4. Mise à jour de `player` : réserve, ancre, compteurs, garanties.
-5. Ajout des cartes (`addCard`) et historique (`booster_opening`).
+5. Ajout des cartes (`CardsService.grant`) et historique (`booster_opening`). Les raretés sont tirées avec un aléatoire cryptographique (`crypto.randomInt`).
 6. Calcul des statistiques et évaluation des succès.
 7. Réponse : cartes (avec `isNew` et `quantity`), nouvel état de la réserve, statistiques, nouveaux succès, garantie appliquée.
 

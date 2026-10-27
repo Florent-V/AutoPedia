@@ -5,8 +5,8 @@
 - **Méthode** : email et mot de passe (8 à 128 caractères), avec connexion automatique après l'inscription.
 - **Mots de passe** : hachés par Better Auth (scrypt), stockés dans `account.password`.
 - **Sessions** : stockées en base (table `session`), valables 30 jours et prolongées une fois par jour d'activité. Le cookie est `httpOnly`, `SameSite=Lax`, et `Secure` automatiquement si `BETTER_AUTH_URL` est en HTTPS. Un cache signé de 5 minutes (`cookieCache`) évite une lecture en base à chaque requête.
-- **Montage** : le gestionnaire Better Auth est monté sur `/api/auth/*` **avant** l'analyse JSON de NestJS, car il lit lui-même le corps brut. Voir `apps/api/src/main.ts`.
-- **Garde global** : `AuthGuard` (`apps/api/src/auth/auth.guard.ts`) protège **toutes** les routes par défaut. Les routes publiques sont marquées explicitement `@Public()` : santé, clé publique push, et les deux routes d'administration du catalogue, protégées par jeton.
+- **Montage** : le gestionnaire Better Auth est monté sur `/api/auth/*` **avant** l'analyse JSON de NestJS, car il lit lui-même le corps brut. Voir `apps/api/src/bootstrap.ts`.
+- **Garde global** : `AuthGuard` (`apps/api/src/modules/identity/http/auth.guard.ts`) protège **toutes** les routes par défaut. Les routes publiques sont marquées explicitement `@Public()` : santé, clé publique push, et les deux routes d'administration du catalogue, protégées par jeton.
 - **Côté front** : client `better-auth/vue`, et un middleware global qui redirige vers `/login` les pages protégées.
 
 ## Protection contre les abus

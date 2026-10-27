@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseEnumPipe, ParseUUIDPipe, Post } from '@nestjs/common';
 import { IsDefined, IsIn } from 'class-validator';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { GamesService } from '../application/games.service';
 import { GAME_TYPES, GameType } from '../domain/game-rules';

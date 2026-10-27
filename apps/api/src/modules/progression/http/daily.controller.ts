@@ -1,5 +1,5 @@
 import { Controller, Get, HttpCode, Post } from '@nestjs/common';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { DailyRewardService } from '../application/daily-reward.service';
 

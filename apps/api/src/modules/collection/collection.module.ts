@@ -7,6 +7,7 @@ import { CollectionQueryService } from './application/collection.query';
 import { BoosterReserveRepository } from './domain/booster-reserve';
 import { CarPool, OwnedCards } from './domain/ports';
 import { BoostersController } from './http/boosters.controller';
+import { CarsController } from './http/cars.controller';
 import { CollectionController } from './http/collection.controller';
 import {
   CatalogCarPool,
@@ -17,7 +18,7 @@ import {
 /** Contexte « Collection » : cartes possédées, réserve et ouverture des boosters. */
 @Module({
   imports: [CatalogModule, StatisticsModule],
-  controllers: [BoostersController, CollectionController],
+  controllers: [BoostersController, CollectionController, CarsController],
   providers: [
     BoostersService,
     CardsService,

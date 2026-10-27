@@ -1,5 +1,5 @@
 import { Controller, Get, HttpCode, Post } from '@nestjs/common';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { PlayerStatsQuery } from '../../statistics/player-stats.query';
 import { BoostersService } from '../application/boosters.service';

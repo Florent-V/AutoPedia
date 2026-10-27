@@ -117,4 +117,4 @@ Au total  débloquer tous les succès rapporte **11 400 crédits**.
 
 ## Ajouter un succès
 
-Les succès sont déclarés dans `apps/api/src/achievements/achievements.definitions.ts`. Ajouter une ligne suffit, à condition que la statistique existe déjà (voir `PlayerStats` dans `apps/api/src/player/player-stats.ts`). La progression, le déblocage, la récompense et l'affichage sont automatiques. Pour une nouvelle statistique, il faut l'ajouter au calcul de `computePlayerStats`.
+Les succès sont déclarés dans `apps/api/src/modules/progression/domain/achievements.ts`. Ajouter une ligne suffit, à condition que la statistique existe déjà (voir `PlayerStats` dans `apps/api/src/modules/statistics/player-stats.ts`). La progression, le déblocage, la récompense et l'affichage sont automatiques. Pour une nouvelle statistique, il faut l'ajouter au calcul de `computePlayerStats` (`player-stats.query.ts`).

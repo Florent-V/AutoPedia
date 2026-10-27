@@ -1,18 +1,18 @@
 # 12. Bots : implémentation
 
-Règles du jeu vues par le joueur : [Bots](../fonctionnel/13-bots.md). Ce document décrit le code (`apps/api/src/bots/`).
+Règles du jeu vues par le joueur : [Bots](../fonctionnel/13-bots.md). Ce document décrit le code (`apps/api/src/modules/bots/`).
 
 ## Principe
 
-Les bots sont des **joueurs ordinaires** : une ligne `user`, sans ligne `account`, donc sans moyen de se connecter, et une ligne `player` avec `isBot = true`, une personnalité (`botProfile`, JSON) et une heure de prochain passage (`botNextActionAt`). Pour agir, ils appellent **les mêmes services que l'API** (`BoostersService`, `DailyService`, `AuctionsService`, `TradesService`). Toutes les règles s'appliquent donc à l'identique : verrous, séquestre, limites, commission, succès et récompenses. Aucune règle n'existe « pour les bots » côté économie, sauf leur revenu quotidien simulé (`bot:jeux` dans le journal des crédits).
+Les bots sont des **joueurs ordinaires** : une ligne `user`, sans ligne `account`, donc sans moyen de se connecter, et une ligne `player` avec `isBot = true`, une personnalité (`botProfile`, JSON) et une heure de prochain passage (`botNextActionAt`). Pour agir, ils appellent **les mêmes cas d'usage que l'API** (`BoostersService`, `DailyRewardService`, `AuctionsService`, `TradesService`). Toutes les règles s'appliquent donc à l'identique : verrous, séquestre, limites, commission, succès et récompenses. Aucune règle n'existe « pour les bots » côté économie, sauf leur dotation de départ (`bot:dotation`) et leur revenu quotidien simulé (`bot:jeux`), tous deux inscrits au journal des crédits via le portefeuille.
 
 ## Fichiers
 
 | Fichier | Rôle |
 | --- | --- |
-| `bot-brain.ts` | Fonctions **pures**, testées : `botValuation`, `decideBid`, `acceptsPriceOffer`, `acceptsSwap`, `auctionStartPrice`, `tradeAskPrice`, préréglages des personnalités, pseudos |
-| `bot-brain.spec.ts` | Tests : valeur plus haute pour une carte manquante, bonus de marque fétiche, jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
-| `bots.service.ts` | Création des bots, boucle d'activité, enchaînement des actions |
+| `domain/bot-brain.ts` | Fonctions **pures**, testées : `botValuation`, `decideBid`, `acceptsPriceOffer`, `acceptsSwap`, `auctionStartPrice`, `tradeAskPrice`, préréglages des personnalités, pseudos |
+| `domain/bot-brain.spec.ts` | Tests : valeur plus haute pour une carte manquante, bonus de marque fétiche, jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
+| `application/bots.service.ts` | Création des bots, boucle d'activité, enchaînement des actions |
 
 ## Boucle
 
@@ -22,7 +22,7 @@ toutes les BOTS_TICK_SECONDS (60 s) :
   ensureBots()          crée les bots manquants (jusqu'à BOTS_COUNT), arrivées étalées sur 1 h
   bots dus = player WHERE isBot AND botNextActionAt ≤ maintenant, au plus 4
   pour chacun :
-    claimDaily      → DailyService.claim + moveCredits(80..320, 'bot:jeux')
+    claimDaily      → DailyRewardService.claim + WalletService.credit(80..320, 'bot:jeux')
     openBoosters    → BoostersService.open × 1..3 (si réserve)
     browseAuctions  → 8 enchères les plus proches de la fin, hors les siennes et celles qu'il mène
                        decideBid(...) → AuctionsService.bid (au plus 2, budget = 60 % du solde)

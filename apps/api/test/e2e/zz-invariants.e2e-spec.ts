@@ -5,7 +5,7 @@ describe('Invariants de l’économie', () => {
   it('chaque solde est égal aux crédits de départ plus le journal', async () => {
     const rows = await db.$queryRaw<Array<{ userId: string; credits: number; ledger: bigint | null }>>`
       SELECT p."userId", p."credits", (SELECT SUM(t."amount") FROM "credit_transaction" t WHERE t."userId" = p."userId") AS ledger
-      FROM "player" p WHERE NOT p."isBot"`;
+      FROM "player" p`;
     expect(rows.length).toBeGreaterThan(10);
     for (const r of rows) expect(r.credits).toBe(100 + Number(r.ledger ?? 0));
   });

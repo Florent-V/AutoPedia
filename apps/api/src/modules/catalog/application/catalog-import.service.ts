@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
-import { assignRarities } from '../modules/catalog/domain/rarity';
-import { MediaService } from './media.service';
-import { SEED_CARS } from './seed-cars';
-import { fetchWikidataCars, WikidataCar } from './wikidata';
+import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
+import { assignRarities } from '../domain/rarity';
+import { MediaSyncService } from './media-sync.service';
+import { SEED_CARS } from '../infrastructure/seed-cars';
+import { fetchWikidataCars, WikidataCar } from '../infrastructure/wikimedia/wikidata';
 
 export type ImportSource = 'wikidata' | 'seed';
 
@@ -17,13 +17,13 @@ const slug = (s: string) =>
     .replace(/(^-|-$)/g, '');
 
 @Injectable()
-export class CatalogService implements OnApplicationBootstrap {
-  private readonly logger = new Logger(CatalogService.name);
+export class CatalogImportService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(CatalogImportService.name);
   private running: Promise<unknown> | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly media: MediaService,
+    private readonly media: MediaSyncService,
   ) {}
 
   onApplicationBootstrap() {

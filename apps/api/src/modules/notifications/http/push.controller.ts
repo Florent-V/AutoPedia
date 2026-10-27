@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, ServiceUnavailableException } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, IsUrl, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { AuthUser, CurrentUser, Public } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser, Public } from '../../identity/http/auth.guard';
 import { PushService } from '../application/push.service';
 
 class PushKeys {

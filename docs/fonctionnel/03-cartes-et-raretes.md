@@ -81,7 +81,7 @@ Une fois la rareté tirée, la carte est choisie **uniformément** parmi les car
 - **Rythme** : un joueur assidu ouvre environ 15 à 25 boosters par jour. Il voit donc une Légendaire tous les un ou deux jours, et plusieurs Épiques par jour. Les moments forts sont réguliers sans devenir banals.
 - **Compléter le catalogue** prend des mois avec les seuls boosters : pour obtenir les 60 Légendaires, il faut statistiquement environ 280 tirages de Légendaires, soit des milliers de boosters. C'est voulu, et c'est là qu'interviennent la **boutique** (qui permet de cibler une rareté) et la **bourse** (qui permet d'échanger ses doublons).
 - **Avant correction**, la variance posait problème (jusqu'à 200 boosters sans Légendaire). Les **garanties** l'ont corrigée.
-- Tous les réglages sont centralisés dans `apps/api/src/game/rarity.ts` et dans les variables `PITY_*`.
+- Tous les réglages sont centralisés dans `apps/api/src/modules/catalog/domain/rarity.ts` (raretés, poids de tirage), `apps/api/src/modules/collection/domain/booster-draw.ts` (garanties) et dans les variables `PITY_*`.
 
 ## Points de collection
 

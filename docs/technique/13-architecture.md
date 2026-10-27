@@ -1,6 +1,6 @@
 # 13. Architecture DDD et hexagonale de l'API
 
-Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la refonte. Elle est mise à jour à chaque étape.
+Cette page décrit l'architecture de `apps/api` : contextes métier, couches, règles anti-triche, transactions et verrous. Elle retrace aussi les étapes de la refonte.
 
 ## Principes
 
@@ -23,15 +23,16 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 
 | Contexte | Responsabilité | Agrégats / objets principaux |
 | --- | --- | --- |
-| `shared` | Noyau partagé : transactions, événements, erreurs métier, horloge, aléatoire | `DomainError`, `Credits`, `Clock` |
+| `shared` | Noyau partagé : transactions, événements, erreurs métier, verrous joueur, horloge, aléatoire | `DomainError`, `Credits`, `PlayerLocks` |
+| `identity` | Authentification (Better Auth), garde global, `@Public()`, `@CurrentUser()` | — |
 | `wallet` | Solde et journal des crédits | `Wallet` |
-| `collection` | Cartes possédées, boosters, tirage, garanties | `BoosterReserve`, `Draw` |
+| `collection` | Cartes possédées, boosters, tirage, garanties, fiche d'une carte vue par le joueur | `BoosterReserve`, ports `CarPool` et `OwnedCards` |
 | `player` | Création de la fiche joueur à la première requête, profil composé `/me` | `PlayerProvisioning` |
 | `statistics` | Modèle de lecture des statistiques d'un joueur (affichage et succès) | `PlayerStatsQuery` |
 | `progression` | Succès et leurs récompenses, récompense quotidienne | `DailyStreak`, définitions des succès |
 | `games` | Mini-jeux | `GameSession`, `QuestionFactory` (port) |
-| `marketplace` | Boutique, bourse, enchères | `ShopOffer`, `TradeOffer`, `Auction` |
-| `catalog` | Cartes, import Wikidata, photos | `Car` |
+| `marketplace` | Boutique, bourse, enchères (et leurs tâches de fond) | `TradeOffer`, `Auction`, rotation de la boutique |
+| `catalog` | Cartes, raretés, import Wikidata, photos, résumés, santé, administration | `CatalogReader`, raretés |
 | `notifications` | Web Push | abonné aux événements |
 | `bots` | Joueurs automatiques | consommateurs des cas d'usage |
 
@@ -45,9 +46,32 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | 3 | Contexte `progression` (succès par événements, récompense quotidienne) | ✅ |
 | 4 | Contexte `games` (agrégat `GameSession`, port `QuestionFactory`, aléatoire cryptographique) | ✅ |
 | 5 | Contexte `marketplace` (agrégats `TradeOffer` et `Auction`, boutique), `notifications` (abonnés après validation), `bots` | ✅ |
-| 6 | Contextes `catalog`, `notifications` et `bots`, nettoyage final | ⏳ |
+| 6 | Contextes `catalog` et `identity`, dotation des bots inscrite au journal, nettoyage final | ✅ |
 
-La suite de bout en bout doit rester verte à chaque étape.
+La suite de bout en bout est restée verte à chaque étape.
+
+## Où sont faits les contrôles anti-triche
+
+Tous les contrôles sont faits **côté serveur**. Une requête modifiée à la main ne peut rien obtenir de plus qu'un clic normal.
+
+| Tentative | Ce qui l'empêche | Couche |
+| --- | --- | --- |
+| Ajouter un champ (prix, carte, gagnant, rareté…) | `forbidNonWhitelisted` : 400 | `http/` (global) |
+| Envoyer un montant négatif, décimal ou énorme | DTO (`@IsInt`, `@Min`, `@Max`), puis `Credits` et `positiveInt` dans le domaine | `http/` + `domain/` |
+| Choisir le contenu d'un booster | Aucun paramètre accepté ; raretés tirées par le serveur (aléatoire cryptographique) | `domain/` |
+| Ouvrir plus de boosters que la réserve | `BoosterReserve.consume` recalcule la réserve à partir de l'heure du serveur, sous verrou | `domain/` |
+| Lire la bonne réponse d'un mini-jeu | `publicQuestion` retire tous les champs secrets ; la réponse ne quitte le serveur qu'après le choix | `domain/` |
+| Deviner la position de la bonne réponse | Mélanges par aléatoire cryptographique | `infrastructure/` |
+| Répondre deux fois, ou à la partie d'un autre | Verrou de la partie, statut vérifié par `GameSession`, partie cherchée par (id, joueur) | `application/` + `domain/` |
+| Acheter en boutique à un autre prix, ou une offre passée | Offres recalculées par le serveur ; seule la clé est envoyée ; unicité (joueur, offre) | `application/` + base |
+| Vendre une carte non possédée, ou deux fois | Séquestre par décrément conditionnel (`CardsService.take`) | `infrastructure/` |
+| Dépenser plus que son solde | `Wallet.debit` (409), sous verrou, avec contrôle optimiste à l'écriture | `domain/` + `infrastructure/` |
+| Accepter sa propre offre, une offre expirée, ou deux fois | `TradeOffer.accept` sous verrou | `domain/` |
+| Surenchérir sous le minimum, sur soi-même, ou après la fin | `Auction.bid` sous verrou | `domain/` |
+| Réclamer deux fois la récompense du jour, ou fausser la série | `DailyStreak.claim` : dates calculées par l'horloge du serveur | `domain/` |
+| Toucher deux fois la récompense d'un succès | `INSERT … ON CONFLICT DO NOTHING RETURNING` avant le paiement | `application/` |
+| Rafales de requêtes | Limitation de débit par joueur (429) | `http/` (global) |
+| Faire appeler une adresse interne par le serveur (push) | Liste des services de notification autorisés | `domain/` |
 
 ## Socle partagé (`src/shared/`)
 
@@ -56,7 +80,9 @@ La suite de bout en bout doit rester verte à chaque étape.
 | `domain/errors.ts` | `InvalidRequest` (400), `NotFound` (404), `Forbidden` (403), `RuleViolation` (409), `Unavailable` (503). Le domaine lève ces erreurs sans connaître HTTP |
 | `domain/credits.ts`, `domain/guards.ts` | Objet-valeur `Credits` et contrôles de bornes (entiers positifs, plafonds) |
 | `domain/domain-event.ts` | Contrat des événements de domaine (nom stable porté par la classe) |
-| `application/ports.ts` | Ports `UnitOfWork`, `EventBus`, `Clock`, `RandomSource` |
+| `application/ports.ts` | Ports `UnitOfWork`, `EventBus`, `PlayerLocks`, `Clock`, `RandomSource` |
+| `domain/random.ts`, `domain/seeded.ts`, `domain/zoned-time.ts` | Mélange, aléatoire déterministe (boutique), dates dans le fuseau du jeu |
+| `infrastructure/prisma/transaction.ts` | Accès à la transaction en cours (`Db`) et verrous joueur |
 | `infrastructure/cls-unit-of-work.ts` | Transaction Prisma portée par le contexte de la requête (`nestjs-cls` + `@nestjs-cls/transactional`). Les appels imbriqués rejoignent la transaction en cours. Les événements sont livrés aux abonnés `@OnDomainEvent` dans la transaction, puis aux abonnés `@AfterCommit` après validation |
 | `infrastructure/system.ts` | Horloge système et aléatoire cryptographique (`crypto.randomInt`) |
 | `http/domain-error.filter.ts` | Traduit les erreurs métier en réponses HTTP ; une violation d'unicité en base (double requête) devient un 409 |
@@ -108,3 +134,15 @@ cd apps/api && npm run test:e2e
 | `daily` | Une réclamation par jour même en rafale, carte du 7ᵉ jour, série remise à 1 |
 | `progression` | Succès signalés dans la réponse et payés une seule fois (rafales d'ouvertures et de consultations), journal du portefeuille |
 | `zz-invariants` | Pour chaque joueur, solde = crédits de départ + somme du journal ; aucun solde ni aucune quantité négatifs |
+
+## Ajouter une fonctionnalité
+
+Pour un développeur qui vient de Symfony : un contexte correspond à peu près à un *bundle*. Un cas d'usage correspond à un service applicatif (ou à un *handler* de commande Messenger). Les événements de domaine jouent le rôle des événements Symfony, avec deux moments d'écoute : dans la transaction, ou après validation.
+
+1. **Règle métier** : l'écrire dans l'agrégat ou dans une fonction pure de `domain/`, avec son test unitaire. Lever une erreur métier (`RuleViolation`, `InvalidRequest`…), jamais une exception HTTP.
+2. **Persistance** : déclarer un port (classe abstraite) dans `domain/` et l'implémenter dans `infrastructure/` avec `Db` (transaction en cours).
+3. **Cas d'usage** : dans `application/`, ouvrir `uow.run(...)`, verrouiller (objet partagé puis joueurs), charger, appliquer la règle, enregistrer, puis publier un événement si d'autres contextes doivent réagir.
+4. **Autres contextes** : n'utiliser que leurs services exportés (`WalletService`, `CardsService`, `CatalogReader`…), jamais leurs tables.
+5. **HTTP** : un DTO strict (`class-validator`) et un contrôleur fin qui compose la réponse.
+6. **Test de bout en bout** dans `test/e2e/` : chemin nominal, requêtes invalides ou enrichies, et concurrence si la fonctionnalité touche aux crédits ou aux cartes.
+

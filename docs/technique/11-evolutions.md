@@ -8,10 +8,10 @@
 | **Achat immédiat** sur les enchères | Vendre vite à un prix garanti | `auction` (ajouter `buyNowPrice`) |
 | **Historique des prix** par carte | Aider à fixer ses prix | Tables `bid`, `trade_offer`, `shop_purchase` |
 | **Profil public** et classement | Émulation, partage | `computePlayerStats` |
-| **Recyclage des doublons** contre des crédits | Valoriser les doublons, nouveau puits/source | `removeCard` + `moveCredits` |
-| **Boosters thématiques** (par pays, par décennie, 100 % course) | Variété, événements | `pickCar` (ajouter des filtres) |
+| **Recyclage des doublons** contre des crédits | Valoriser les doublons, nouveau puits/source | `CardsService.take` + `WalletService.credit` |
+| **Boosters thématiques** (par pays, par décennie, 100 % course) | Variété, événements | `CatalogReader.randomCar` (ajouter des filtres) |
 | **Défis quotidiens** (« obtiens une voiture japonaise ») | Raison de revenir chaque jour | Statistiques et succès |
-| **Nouveaux mini-jeux** : « Plus ou moins » sur l'année, devinette de silhouette floutée, mémoire | Variété | `questions.ts` |
+| **Nouveaux mini-jeux** : « Plus ou moins » sur l'année, devinette de silhouette floutée, mémoire | Variété | `QuestionFactory` (`games/infrastructure/sql-question-factory.ts`) |
 | **Chronomètre** dans le quiz | Limiter la recherche de réponses sur Internet | `game_session.state` |
 | **Événements** (week-end double crédits, booster Légendaire offert) | Animation | `economyConfig` |
 | **Connexion Google / Apple** | Inscription plus rapide | Plugins Better Auth |

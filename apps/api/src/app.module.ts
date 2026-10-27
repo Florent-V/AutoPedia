@@ -1,11 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from './auth/auth.module';
-import { CarsController } from './cars/cars.controller';
-import { CarsService } from './cars/cars.service';
-import { CatalogController } from './catalog/catalog.controller';
-import { CatalogService } from './catalog/catalog.service';
-import { MediaService } from './catalog/media.service';
-import { HealthController } from './health.controller';
+import { IdentityModule } from './modules/identity/identity.module';
 import { BotsModule } from './modules/bots/bots.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CollectionModule } from './modules/collection/collection.module';
@@ -21,7 +15,7 @@ import { SharedModule } from './shared/shared.module';
 @Module({
   imports: [
     SharedModule,
-    AuthModule,
+    IdentityModule,
     PlayerModule,
     WalletModule,
     CatalogModule,
@@ -33,7 +27,5 @@ import { SharedModule } from './shared/shared.module';
     NotificationsModule,
     BotsModule,
   ],
-  controllers: [HealthController, CarsController, CatalogController],
-  providers: [CarsService, CatalogService, MediaService],
 })
 export class AppModule {}

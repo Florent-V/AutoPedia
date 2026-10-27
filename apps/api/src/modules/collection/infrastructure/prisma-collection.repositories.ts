@@ -78,6 +78,14 @@ export class PrismaOwnedCards extends OwnedCards {
     return deleted.count > 0;
   }
 
+  async ownership(userId: string, carId: number) {
+    const card = await this.db.tx.userCard.findUnique({
+      where: { userId_carId: { userId, carId } },
+      select: { quantity: true, firstObtainedAt: true },
+    });
+    return { quantity: card?.quantity ?? 0, firstObtainedAt: card?.firstObtainedAt ?? null };
+  }
+
   async quantity(userId: string, carId: number) {
     const card = await this.db.tx.userCard.findUnique({ where: { userId_carId: { userId, carId } }, select: { quantity: true } });
     return card?.quantity ?? 0;

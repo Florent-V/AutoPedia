@@ -12,7 +12,8 @@ export type LedgerReason =
   | 'auction:sale'
   | 'achievement'
   | 'daily'
-  | 'bot:jeux';
+  | 'bot:jeux'
+  | 'bot:dotation';
 
 export interface LedgerEntry {
   amount: number;

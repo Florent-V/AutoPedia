@@ -2,9 +2,11 @@
 
 Toutes les routes sont préfixées par `/api`. Elles demandent une **session** (cookie Better Auth), sauf celles marquées « public ». Les erreurs suivent le format NestJS `{ statusCode, message, error }`, avec des messages en français prêts à afficher.
 
-Les succès renvoyés dans `newAchievements` contiennent leur `reward` (crédits versés).
+Toutes les actions (`POST`) renvoient `newAchievements` : les succès débloqués pendant la requête, avec leur `reward` (crédits versés).
 
-Codes courants : `400` entrée invalide · `401` non connecté · `403` interdit · `404` introuvable · `409` conflit de règle (plus de booster, crédits insuffisants, offre déjà prise…) · `503` catalogue vide.
+Le client n'envoie que des **intentions**. Prix, cartes, raretés, gains, dates et bonnes réponses sont décidés par le serveur, et **tout champ non prévu dans le corps ou la requête est refusé (400)**.
+
+Codes courants : `400` entrée invalide ou champ non prévu · `401` non connecté · `403` interdit · `404` introuvable · `409` conflit de règle (plus de booster, crédits insuffisants, offre déjà prise…) · `429` trop de requêtes · `503` catalogue vide.
 
 ## Authentification (Better Auth)
 
@@ -48,7 +50,7 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 | GET | `/games` | `resetsAt`, `games[]` (`type`, `name`, `description`, `reward`, `rounds`, `creditsPerWin`, `playsPerDay`, `playsLeft`, `active`, `bestScore`) |
 | POST | `/games/:type/start` | `type` = `DUEL`, `QUIZ`, `WEIGHT`, `MYSTERY` ou `DOORS`. Renvoie la partie (reprise de la partie active s'il y en a une). `409` si plus de partie aujourd'hui |
 | GET | `/games/sessions/:id` | Partie : `round`, `total`, `score`, `credits`, `history[]`, `question` (sans la réponse) |
-| POST | `/games/sessions/:id/answer` | `{ choice }` (`'a'`/`'b'`, `0..3` ou `0..2` selon le jeu) → `correct`, `answer`, `reveal`, `doors` (3 garages), `prize` (carte gagnée), `gained`, `balance`, `session`, `summary` (à la fin : `score`, `credits`, `rewardCard`, `prize`, `newAchievements`) |
+| POST | `/games/sessions/:id/answer` | `{ choice }` (`'a'`/`'b'`, `0..3` ou `0..2` selon le jeu) → `correct`, `answer`, `reveal`, `doors` (3 garages), `prize` (carte gagnée), `gained`, `balance`, `session`, `summary` (à la fin : `score`, `credits`, `rewardCard`, `prize`), `newAchievements` |
 
 ## Boutique
 
@@ -87,7 +89,7 @@ Format d'une carte : `id, name, manufacturer, country, yearStart, yearEnd, image
 | Méthode | Route | Rôle |
 | --- | --- | --- |
 | GET | `/push/public-key` | Public : clé VAPID, ou `null` si désactivé |
-| POST | `/push/subscribe` | Abonnement du navigateur (`endpoint`, `keys`) |
+| POST | `/push/subscribe` | Abonnement du navigateur (`endpoint`, `keys`) ; l'adresse doit être celle d'un service de notification connu |
 | POST | `/push/unsubscribe` | `{ endpoint }` |
 | POST | `/push/test` | Notification d'essai |
 

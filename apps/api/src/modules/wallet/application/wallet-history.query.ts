@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   achievement: 'Succès débloqué',
   daily: 'Récompense du jour',
   'bot:jeux': 'Mini-jeux',
+  'bot:dotation': 'Dotation de départ',
 };
 
 /** Lecture : solde et derniers mouvements. */

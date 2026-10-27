@@ -82,7 +82,7 @@ Le nom de fichier contient le QID, et non le nom du modèle, pour ne pas trahir 
 
 `syncSummaries` récupère l'introduction en texte brut (`prop=extracts&exintro&explaintext&exsentences=5`) **par lots de 20 articles**, groupés par langue. Si un résumé manque encore à l'affichage d'une fiche, il est récupéré à la volée (API REST, délai court) et mis en cache 30 jours.
 
-## Politesse et robustesse (`catalog/http.ts`)
+## Politesse et robustesse (`catalog/infrastructure/wikimedia/http.ts`)
 
 Wikimedia limite fortement les robots, surtout depuis les adresses IP de datacenter. Le client HTTP :
 
@@ -107,7 +107,7 @@ curl -H "x-admin-token: $ADMIN_TOKEN" https://monsite/api/admin/catalog/status
 
 ## Jeu de secours
 
-`apps/api/src/catalog/seed-cars.ts` contient 115 voitures emblématiques (nom, marque, pays, années, notoriété estimée, titre Wikipédia). Il sert quand Wikidata est injoignable au premier démarrage, et pour les tests. Ces cartes sont rattachées automatiquement aux fiches Wikidata lors d'un import ultérieur.
+`apps/api/src/modules/catalog/infrastructure/seed-cars.ts` contient 115 voitures emblématiques (nom, marque, pays, années, notoriété estimée, titre Wikipédia). Il sert quand Wikidata est injoignable au premier démarrage, et pour les tests. Ces cartes sont rattachées automatiquement aux fiches Wikidata lors d'un import ultérieur.
 
 ## Ordres de grandeur
 

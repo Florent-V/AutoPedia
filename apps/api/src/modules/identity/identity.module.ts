@@ -1,10 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
-import { UserThrottlerGuard } from '../shared/http/user-throttler.guard';
-import { AUTH, createAuth } from './auth';
-import { AuthGuard } from './auth.guard';
+import { PrismaService } from '../../shared/infrastructure/prisma/prisma.service';
+import { UserThrottlerGuard } from '../../shared/http/user-throttler.guard';
+import { AUTH, createAuth } from './infrastructure/better-auth';
+import { AuthGuard } from './http/auth.guard';
 
 @Global()
 @Module({
@@ -23,4 +23,4 @@ import { AuthGuard } from './auth.guard';
   ],
   exports: [AUTH],
 })
-export class AuthModule {}
+export class IdentityModule {}

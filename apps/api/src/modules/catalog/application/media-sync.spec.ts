@@ -1,5 +1,5 @@
-import { stripHtml } from './media.service';
-import { commonsFileName } from './wikidata';
+import { stripHtml } from './media-sync.service';
+import { commonsFileName } from '../infrastructure/wikimedia/wikidata';
 
 describe('media helpers', () => {
   it('extracts the Commons file name from a Wikidata image URL', () => {

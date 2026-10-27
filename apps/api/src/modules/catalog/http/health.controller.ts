@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { Public } from './auth/auth.guard';
-import { PrismaService } from './shared/infrastructure/prisma/prisma.service';
+import { Public } from '../../identity/http/auth.guard';
+import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {

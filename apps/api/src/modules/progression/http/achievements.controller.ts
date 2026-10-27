@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { AchievementsService } from '../application/achievements.service';
 
 @Controller('achievements')

@@ -4,8 +4,8 @@ import { toNodeHandler } from 'better-auth/node';
 import express from 'express';
 import helmet from 'helmet';
 import { mkdirSync } from 'node:fs';
-import { AUTH, Auth } from './auth/auth';
-import { MEDIA_DIR } from './catalog/media.service';
+import { AUTH, Auth } from './modules/identity/infrastructure/better-auth';
+import { MEDIA_DIR } from './modules/catalog/application/media-sync.service';
 import { DomainErrorFilter } from './shared/http/domain-error.filter';
 
 /** Configuration HTTP commune au serveur et aux tests de bout en bout. */

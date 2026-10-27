@@ -4,8 +4,8 @@ import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import sharp from 'sharp';
-import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
-import { HttpError, mediaWikiQuery, politeFetch } from './http';
+import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
+import { HttpError, mediaWikiQuery, politeFetch } from '../infrastructure/wikimedia/http';
 
 export const MEDIA_DIR = resolve(process.env.MEDIA_DIR ?? join(process.cwd(), 'media'));
 /** Largeur des photos stockées (les cartes font au plus ~360 px de large, ×2 pour les écrans haute densité). */
@@ -78,8 +78,8 @@ function isTransient(err: unknown) {
 }
 
 @Injectable()
-export class MediaService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(MediaService.name);
+export class MediaSyncService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(MediaSyncService.name);
   private running: Promise<void> | null = null;
   private timer?: NodeJS.Timeout;
 

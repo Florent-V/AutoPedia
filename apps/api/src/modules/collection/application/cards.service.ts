@@ -30,6 +30,10 @@ export class CardsService {
     return this.owned.quantity(userId, carId);
   }
 
+  ownership(userId: string, carId: number) {
+    return this.owned.ownership(userId, carId);
+  }
+
   /** Tire une carte au hasard de la rareté demandée (ou de la plus proche), hors `exclude` si possible. */
   async draw(rarity: Rarity, exclude: number[] = []): Promise<DrawnCar> {
     const car = await this.pool.pick(rarity, exclude);

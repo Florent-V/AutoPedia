@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
-import { AuthUser, CurrentUser } from '../../../auth/auth.guard';
+import { AuthUser, CurrentUser } from '../../identity/http/auth.guard';
 import { CatalogReader } from '../../catalog/application/catalog-reader';
 import { AuctionsService } from '../application/auctions.service';
 import { MarketQueries } from '../application/market.queries';

@@ -11,13 +11,22 @@ cd apps/web && npx nuxt typecheck
 
 | Fichier | Ce qui est vérifié |
 | --- | --- |
-| `game/booster-clock.spec.ts` | Régénération, plafond, démarrage du minuteur à l'ouverture depuis une réserve pleine, refus sans booster |
-| `game/rarity.spec.ts` | Répartition du catalogue par notoriété, petits catalogues, carte vedette jamais Commune, garanties Épique et Légendaire, déclenchement au N-ième booster |
-| `game/seeded.spec.ts` | Mélange déterministe, et bien une permutation |
-| `game/zoned-time.spec.ts` | Début de journée et heure suivante à Paris, en heure d'été et d'hiver |
-| `shop/shop-rotation.spec.ts` | Stabilité dans l'heure, changement à l'heure suivante, aucune Commune répétée dans la journée, Légendaires sur 4 heures, une seule affaire par heure |
-| `catalog/media.spec.ts` | Extraction du nom de fichier Commons, nettoyage du HTML des auteurs |
-| `bots/bot-brain.spec.ts` | Valeur estimée (carte manquante, doublons, marque fétiche), jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
+| `shared/domain/credits.spec.ts` | Montants refusés (négatifs, décimaux, démesurés), solde jamais négatif, plafond |
+| `shared/infrastructure/system.spec.ts` | Aléatoire cryptographique dans [0, 1[ |
+| `wallet/domain/wallet.spec.ts` | Journal avec solde résultant, débit refusé sans effet de bord, montants invalides |
+| `collection/domain/booster-reserve.spec.ts` | Réserve vide refusée, régénération avant ouverture, garanties remises à zéro, boosters offerts au-delà du maximum |
+| `games/domain/game-session.spec.ts` | Aucun champ secret dans la vue, fin au premier faux pas, bonus de sans-faute, réponses hors format, cartes gagnées, portes |
+| `marketplace/domain/auction.spec.ts` | Mise en vente validée, offre minimale, surenchère sur soi-même, prolongation, annulation, règlement et commission |
+| `marketplace/domain/trade-offer.spec.ts` | Contrepartie unique, prix bornés, acceptation unique et non expirée, retrait par le vendeur seulement |
+| `progression/domain/daily-streak.spec.ts` | Une réclamation par jour, série continue et cycle de 7 jours, série remise à 1 |
+| `notifications/domain/push-endpoint.spec.ts` | Adresses de notification limitées aux services connus (anti-SSRF) |
+| `collection/domain/booster-clock.spec.ts` | Régénération, plafond, démarrage du minuteur à l'ouverture depuis une réserve pleine, refus sans booster |
+| `catalog/domain/rarity.spec.ts` + `collection/domain/booster-draw.spec.ts` | Répartition du catalogue par notoriété, petits catalogues, carte vedette jamais Commune, garanties Épique et Légendaire, déclenchement au N-ième booster |
+| `shared/domain/seeded.spec.ts` | Mélange déterministe, et bien une permutation |
+| `shared/domain/zoned-time.spec.ts` | Début de journée et heure suivante à Paris, en heure d'été et d'hiver |
+| `marketplace/domain/shop-rotation.spec.ts` | Stabilité dans l'heure, changement à l'heure suivante, aucune Commune répétée dans la journée, Légendaires sur 4 heures, une seule affaire par heure |
+| `catalog/application/media-sync.spec.ts` | Extraction du nom de fichier Commons, nettoyage du HTML des auteurs |
+| `bots/domain/bot-brain.spec.ts` | Valeur estimée (carte manquante, doublons, marque fétiche), jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
 
 Les tests de bout en bout (`test/e2e/`) rejouent automatiquement les scénarios métier et anti-triche ci-dessous : voir [Architecture DDD](13-architecture.md#tests-de-bout-en-bout).
 
