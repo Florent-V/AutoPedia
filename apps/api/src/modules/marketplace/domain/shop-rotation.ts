@@ -1,6 +1,5 @@
-import { Rarity } from '@prisma/client';
-import { RARITIES } from '../modules/catalog/domain/rarity';
-import { seededRandom, seededShuffle } from '../shared/domain/seeded';
+import { RARITIES, Rarity } from '../../catalog/domain/rarity';
+import { seededRandom, seededShuffle } from '../../../shared/domain/seeded';
 
 export interface ShopSlotRule {
   /** Offres de cette rareté présentées à chaque rotation. */

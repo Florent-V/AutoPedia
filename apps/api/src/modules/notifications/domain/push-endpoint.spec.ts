@@ -1,5 +1,5 @@
-import { InvalidRequest } from '../shared/domain/errors';
-import { assertPushEndpoint } from './push.service';
+import { InvalidRequest } from '../../../shared/domain/errors';
+import { assertPushEndpoint } from './push-endpoint';
 
 describe('assertPushEndpoint', () => {
   it('accepte les services de notification des navigateurs', () => {

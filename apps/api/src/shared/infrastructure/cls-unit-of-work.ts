@@ -16,8 +16,6 @@ const PENDING = Symbol('pending-after-commit-events');
  */
 @Injectable()
 export class ClsUnitOfWork extends UnitOfWork {
-  /** Instance unique, pour le pont de migration `legacyTransaction` (à supprimer à la fin de la refonte). */
-  static instance: ClsUnitOfWork | undefined;
   private readonly logger = new Logger('UnitOfWork');
 
   constructor(
@@ -26,12 +24,6 @@ export class ClsUnitOfWork extends UnitOfWork {
     private readonly emitter: EventEmitter2,
   ) {
     super();
-    ClsUnitOfWork.instance = this;
-  }
-
-  /** Client Prisma de la transaction en cours. */
-  get tx() {
-    return this.txHost.tx;
   }
 
   run<T>(work: () => Promise<T>): Promise<T> {

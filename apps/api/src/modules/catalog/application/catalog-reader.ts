@@ -26,6 +26,15 @@ export class CatalogReader {
     return (await this.db.tx.car.count({ where: { id, active: true } })) > 0;
   }
 
+  /** Identifiants des cartes actives, par rareté effective (programme de la boutique). */
+  async activeIdsByRarity(): Promise<Partial<Record<Rarity, number[]>>> {
+    const rows = await this.db.tx.$queryRaw<Array<{ id: number; rarity: Rarity }>>`
+      SELECT "id", COALESCE("rarityOverride", "rarity")::text AS rarity FROM "car" WHERE "active" = true`;
+    const pool: Partial<Record<Rarity, number[]>> = {};
+    for (const r of rows) (pool[r.rarity] ??= []).push(r.id);
+    return pool;
+  }
+
   activeCount() {
     return this.db.tx.car.count({ where: { active: true } });
   }

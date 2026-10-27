@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, ServiceUnavailableException } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, IsUrl, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { AuthUser, CurrentUser, Public } from '../auth/auth.guard';
-import { PushService } from './push.service';
+import { AuthUser, CurrentUser, Public } from '../../../auth/auth.guard';
+import { PushService } from '../application/push.service';
 
 class PushKeys {
   @IsString() @MaxLength(200) p256dh: string;

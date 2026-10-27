@@ -1,4 +1,4 @@
-import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, quantityOf, setCredits, waitFor } from '../helpers';
+import { carOfRarity, creditsWithoutAchievements as creditsOf, db, giveCard, newPlayer, quantityOf, setCredits, statuses, waitFor } from '../helpers';
 
 describe('Enchères', () => {
   it('bloque les crédits, rembourse le surenchéri et règle la vente', async () => {
@@ -93,5 +93,23 @@ describe('Enchères', () => {
     // Plus que son solde : refusé, rien n'est débité.
     await bidder.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 5000 }).expect(409);
     expect(await creditsOf(bidder.id)).toBe(100);
+  });
+
+  it('deux offres simultanées au même montant : une seule est retenue, l’autre n’est pas débitée', async () => {
+    const seller = await newPlayer();
+    const b1 = await newPlayer();
+    const b2 = await newPlayer();
+    const car = await carOfRarity('COMMON', 11);
+    await giveCard(seller.id, car.id);
+    const { body } = await seller.agent.post('/api/auctions').send({ carId: car.id, startPrice: 30, durationHours: 1 }).expect(201);
+    const codes = await statuses([
+      b1.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 30 }),
+      b2.agent.post(`/api/auctions/${body.id}/bid`).send({ amount: 30 }),
+    ]);
+    expect(codes).toEqual([200, 400]);
+    expect((await creditsOf(b1.id)) + (await creditsOf(b2.id))).toBe(200 - 30);
+    const auction = await db.auction.findUniqueOrThrow({ where: { id: body.id } });
+    expect(auction.bidCount).toBe(1);
+    expect(await db.bid.count({ where: { auctionId: body.id } })).toBe(1);
   });
 });

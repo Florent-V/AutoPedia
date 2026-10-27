@@ -1,17 +1,18 @@
-import { legacyTransaction } from '../shared/infrastructure/prisma/legacy-transaction';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
-import { economyConfig } from '../config';
-import { AuctionsService, minBid } from '../auctions/auctions.service';
-import { PlayerProvisioning } from '../modules/player/application/player-provisioning';
-import { BoostersService } from '../modules/collection/application/boosters.service';
-import { effectiveRarity } from '../modules/catalog/application/card-view';
-import { DailyRewardService } from '../modules/progression/application/daily-reward.service';
-import { moveCredits } from '../economy/wallet';
-import { zonedParts } from '../shared/domain/zoned-time';
-import { PrismaService } from '../shared/infrastructure/prisma/prisma.service';
-import { TradesService } from '../trades/trades.service';
+import { economyConfig } from '../../../config';
+import { AuctionsService } from '../../marketplace/application/auctions.service';
+import { minBid } from '../../marketplace/domain/auction';
+import { PlayerProvisioning } from '../../player/application/player-provisioning';
+import { BoostersService } from '../../collection/application/boosters.service';
+import { effectiveRarity } from '../../catalog/application/card-view';
+import { DailyRewardService } from '../../progression/application/daily-reward.service';
+import { zonedParts } from '../../../shared/domain/zoned-time';
+import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
+import { TradesService } from '../../marketplace/application/trades.service';
+import { PlayerLocks, UnitOfWork } from '../../../shared/application/ports';
+import { WalletService } from '../../wallet/application/wallet.service';
 import {
   acceptsPriceOffer,
   acceptsSwap,
@@ -23,7 +24,7 @@ import {
   decideBid,
   STYLE_PRESETS,
   tradeAskPrice,
-} from './bot-brain';
+} from '../domain/bot-brain';
 
 const env = (name: string, fallback: number) => {
   const v = Number(process.env[name]);
@@ -57,6 +58,9 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
     private readonly provisioning: PlayerProvisioning,
     private readonly auctions: AuctionsService,
     private readonly trades: TradesService,
+    private readonly wallet: WalletService,
+    private readonly uow: UnitOfWork,
+    private readonly locks: PlayerLocks,
   ) {}
 
   onModuleInit() {
@@ -161,7 +165,10 @@ export class BotsService implements OnModuleInit, OnModuleDestroy {
     if (!status.canClaim) return;
     await this.daily.claim(botId);
     const income = Math.round(rand(80, 320));
-    await legacyTransaction((tx) => moveCredits(tx, botId, income, 'bot:jeux'));
+    await this.uow.run(async () => {
+      await this.locks.lock(botId);
+      await this.wallet.credit(botId, income, 'bot:jeux');
+    });
   }
 
   private async openBoosters(botId: string) {

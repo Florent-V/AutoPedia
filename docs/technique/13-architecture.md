@@ -44,7 +44,7 @@ Cette page décrit l'architecture cible de `apps/api` et suit l'avancement de la
 | 2 | Contextes `wallet`, `collection`, `player` et `statistics` | ✅ |
 | 3 | Contexte `progression` (succès par événements, récompense quotidienne) | ✅ |
 | 4 | Contexte `games` (agrégat `GameSession`, port `QuestionFactory`, aléatoire cryptographique) | ✅ |
-| 5 | Contexte `marketplace` | ⏳ |
+| 5 | Contexte `marketplace` (agrégats `TradeOffer` et `Auction`, boutique), `notifications` (abonnés après validation), `bots` | ✅ |
 | 6 | Contextes `catalog`, `notifications` et `bots`, nettoyage final | ⏳ |
 
 La suite de bout en bout doit rester verte à chaque étape.
@@ -78,9 +78,12 @@ POST /api/boosters/open                               (aucun paramètre accepté
   NewAchievementsInterceptor    http/          ajoute newAchievements à la réponse
 ```
 
-## Pont de migration
+## Verrous et ordre de verrouillage
 
-Les services pas encore migrés (`shop`, `trades`, `auctions`, `bots`) passent par `legacyTransaction()`. Ils s'exécutent ainsi dans l'unité de travail et partagent leur transaction avec les nouveaux services qu'ils appellent. Sans ce pont, deux connexions se disputeraient le verrou du joueur. Le pont disparaît avec la dernière étape.
+- **Joueur** (`PlayerLocks`, ligne `player` en `FOR UPDATE`) : pris par toute action qui modifie le solde, la réserve ou les cartes d'un joueur. Plusieurs joueurs sont toujours verrouillés triés par identifiant.
+- **Objet partagé d'abord** : une offre de la bourse ou une enchère est verrouillée *avant* les joueurs concernés (acceptation, offre, règlement). Aucune action ne prend un joueur puis une offre ou une enchère : pas de cycle, donc pas d'interblocage.
+- **Partie de mini-jeu** : privée, verrouillée *après* son joueur.
+- **Défense en profondeur** : le portefeuille vérifie aussi, à l'écriture, que le solde n'a pas changé depuis sa lecture (concurrence optimiste). La boutique repose en plus sur une contrainte d'unicité (joueur, offre), et le séquestre sur un décrément conditionnel (jamais de quantité négative).
 
 ## Tests de bout en bout
 
@@ -101,7 +104,7 @@ cd apps/api && npm run test:e2e
 | `games` | Aucune réponse divulguée, gains exacts, reprise de partie, réponses hors format, partie d'un autre joueur, cartes gagnées, limites quotidiennes |
 | `shop` | Achat en rafale (1 seul débit), crédits insuffisants, offre inventée, prix envoyé par le client sans effet |
 | `trades` | Séquestre, double acceptation, échange carte contre carte, validation des contreparties, annulation, expiration |
-| `auctions` | Crédits bloqués, remboursement, minimum de surenchère, anti « dernière seconde », règlement, invendu, validation |
+| `auctions` | Crédits bloqués, remboursement, minimum de surenchère, anti « dernière seconde », règlement, invendu, validation, deux offres simultanées |
 | `daily` | Une réclamation par jour même en rafale, carte du 7ᵉ jour, série remise à 1 |
 | `progression` | Succès signalés dans la réponse et payés une seule fois (rafales d'ouvertures et de consultations), journal du portefeuille |
 | `zz-invariants` | Pour chaque joueur, solde = crédits de départ + somme du journal ; aucun solde ni aucune quantité négatifs |

@@ -1,4 +1,4 @@
-import { Rarity } from '@prisma/client';
+import { Rarity } from '../../catalog/domain/rarity';
 
 /**
  * « Cerveau » des bots : fonctions pures (testables) qui estiment la valeur d'une carte
