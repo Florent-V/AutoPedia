@@ -90,3 +90,5 @@ services:
             $marketMinAccountHours: '%env(int:MARKET_MIN_ACCOUNT_HOURS)%'
             $marketMinBoosters: '%env(int:MARKET_MIN_BOOSTERS)%'
             $tradeMaxRarityGap: '%env(int:TRADE_MAX_RARITY_GAP)%'
+
+    App\Games\Domain\QuestionFactory: '@App\Games\Infrastructure\SqlQuestionFactory'

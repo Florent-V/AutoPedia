@@ -14,7 +14,8 @@ final class SeededRandom implements Random
 
     public function __construct(string $seed)
     {
-        $this->state = hexdec(substr(hash('sha256', $seed), 0, 8));
+        // 4 premiers octets du SHA-256 lus en little-endian, comme le backend NestJS (même graine = même suite).
+        $this->state = unpack('V', substr(hash('sha256', $seed, true), 0, 4))[1];
     }
 
     public function next(): float
