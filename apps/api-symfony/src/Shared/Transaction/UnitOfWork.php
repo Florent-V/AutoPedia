@@ -17,6 +17,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  */
 final class UnitOfWork
 {
+    /** Préfixe des événements « après validation » : #[AsEventListener(event: UnitOfWork::AFTER_COMMIT_PREFIX.MonEvenement::class)]. */
+    public const AFTER_COMMIT_PREFIX = 'after_commit.';
+
     /** @var list<object>|null événements à livrer après validation de la transaction en cours */
     private ?array $pending = null;
 
@@ -76,9 +79,8 @@ final class UnitOfWork
         $this->pending[] = $event;
     }
 
-    /** Nom d'événement des écouteurs « après validation » : #[AsEventListener(event: 'after_commit.'.MonEvenement::class)]. */
     public static function afterCommit(string $eventClass): string
     {
-        return 'after_commit.'.$eventClass;
+        return self::AFTER_COMMIT_PREFIX.$eventClass;
     }
 }

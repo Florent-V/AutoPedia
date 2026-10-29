@@ -87,7 +87,7 @@ final class TradesService
             ++$players[$offer->sellerId()]->activity()->tradesCompleted;
             $this->uow->publish(new TradeCompleted($offer->id(), $offer->sellerId(), $buyerId, $offer->offeredCarId()));
 
-            return $card + ['tradeId' => $offer->id(), 'balance' => $players[$buyerId]->wallet()->balance()];
+            return ['tradeId' => $offer->id()] + $card + ['balance' => $players[$buyerId]->wallet()->balance()];
         });
     }
 

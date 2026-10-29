@@ -8,6 +8,12 @@ framework:
     trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host']
     php_errors:
         log: true
+    # Erreurs métier et requêtes refusées : réponses normales (4xx), pas des incidents.
+    exceptions:
+        App\Shared\Domain\Exception\DomainException:
+            log_level: info
+        Symfony\Component\HttpKernel\Exception\HttpException:
+            log_level: info
 
     rate_limiter:
         # Comptes : 10 tentatives de connexion et 5 inscriptions par minute et par IP.

@@ -13,6 +13,8 @@ doctrine:
             auctionstatus: auction_status
             _int4: int_array
         types:
+            # timestamp(3) : on garde les millisecondes (le type d'origine les tronque).
+            datetime_immutable: App\Shared\Doctrine\Type\MillisecondDateTimeType
             int_array: App\Shared\Doctrine\Type\IntArrayType
             rarity: App\Shared\Doctrine\Type\RarityType
             game_type: App\Shared\Doctrine\Type\GameTypeType
