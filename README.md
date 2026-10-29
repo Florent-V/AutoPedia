@@ -17,6 +17,8 @@ Jeu de collection de cartes sur le thème de l'automobile, pensé d'abord pour l
 
 NestJS 11 · Prisma 6 · PostgreSQL 17 · Better Auth · Nuxt 4 (Vue 3) · Docker Compose
 
+Le dépôt contient aussi **la même API en PHP** (Symfony 7.4, Doctrine ORM 3) dans [`apps/api-symfony`](apps/api-symfony/README.md), pour comparer les deux architectures : même schéma, mêmes routes, mêmes réponses, et la même suite de tests de bout en bout. La comparaison est détaillée dans [`docs/technique/14-symfony-vs-nestjs.md`](docs/technique/14-symfony-vs-nestjs.md).
+
 ## Démarrage rapide
 
 ```bash
@@ -26,6 +28,8 @@ docker compose up -d --build
 
 Ouvrir ensuite http://localhost:3000. Le catalogue s'importe automatiquement au premier démarrage : d'abord les données, puis les photos et les résumés en arrière-plan.
 
+Pour lancer en plus la version Symfony (second front sur http://localhost:3002, avec sa propre base) : renseigner `APP_SECRET` dans `.env`, puis `docker compose --profile symfony up -d --build`.
+
 ## Documentation
 
 Version lisible dans un navigateur, avec schémas : ouvrir [`docs/index.html`](docs/index.html) (régénération : `node docs/build-html.mjs`).
@@ -33,4 +37,4 @@ Version lisible dans un navigateur, avec schémas : ouvrir [`docs/index.html`](d
 La documentation complète est dans [`docs/`](docs/README.md) :
 
 - **Fonctionnelle** : [parcours joueur](docs/fonctionnel/01-presentation.md), [boosters](docs/fonctionnel/02-boosters.md), [cartes et raretés](docs/fonctionnel/03-cartes-et-raretes.md), [collection](docs/fonctionnel/04-collection.md), [succès](docs/fonctionnel/05-succes-et-badges.md), [mini-jeux](docs/fonctionnel/06-mini-jeux.md), [crédits](docs/fonctionnel/07-credits-et-economie.md), [boutique](docs/fonctionnel/08-boutique.md), [bourse](docs/fonctionnel/09-bourse-echanges.md), [application mobile](docs/fonctionnel/10-application-mobile.md), [enchères](docs/fonctionnel/11-encheres.md), [récompenses](docs/fonctionnel/12-recompenses.md), [bots](docs/fonctionnel/13-bots.md)
-- **Technique** : [architecture](docs/technique/01-architecture.md), [modèle de données](docs/technique/02-modele-de-donnees.md), [sécurité](docs/technique/03-authentification-securite.md), [moteur de jeu](docs/technique/04-moteur-de-jeu.md), [économie](docs/technique/05-economie-implementation.md), [import du catalogue](docs/technique/06-catalogue-import.md), [API](docs/technique/07-api.md), [front-end](docs/technique/08-front.md), [déploiement et configuration](docs/technique/09-deploiement-configuration.md), [tests](docs/technique/10-tests-qualite.md), [évolutions](docs/technique/11-evolutions.md), [bots](docs/technique/12-bots.md), [architecture DDD et anti-triche](docs/technique/13-architecture.md)
+- **Technique** : [architecture](docs/technique/01-architecture.md), [modèle de données](docs/technique/02-modele-de-donnees.md), [sécurité](docs/technique/03-authentification-securite.md), [moteur de jeu](docs/technique/04-moteur-de-jeu.md), [économie](docs/technique/05-economie-implementation.md), [import du catalogue](docs/technique/06-catalogue-import.md), [API](docs/technique/07-api.md), [front-end](docs/technique/08-front.md), [déploiement et configuration](docs/technique/09-deploiement-configuration.md), [tests](docs/technique/10-tests-qualite.md), [évolutions](docs/technique/11-evolutions.md), [bots](docs/technique/12-bots.md), [architecture DDD et anti-triche](docs/technique/13-architecture.md), [backend Symfony et comparaison avec NestJS](docs/technique/14-symfony-vs-nestjs.md)

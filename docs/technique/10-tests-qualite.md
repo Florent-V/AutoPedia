@@ -5,6 +5,8 @@
 ```bash
 cd apps/api && npm test          # Jest (tests unitaires)
 cd apps/api && npm run test:e2e  # tests de bout en bout : vraie API + base PostgreSQL temporaire
+cd apps/api && npm run test:e2e:symfony  # la même suite, contre l'API Symfony
+cd apps/api-symfony && php vendor/bin/phpunit  # tests unitaires PHP (domaine)
 cd apps/api && npm run lint      # vérification TypeScript (tsc --noEmit)
 cd apps/web && npx nuxt typecheck
 ```
@@ -29,7 +31,7 @@ cd apps/web && npx nuxt typecheck
 | `catalog/application/media-sync.spec.ts` | Extraction du nom de fichier Commons, nettoyage du HTML des auteurs |
 | `bots/domain/bot-brain.spec.ts` | Valeur estimée (carte manquante, doublons, marque fétiche), jamais d'offre au-delà de la valeur, pas d'offre systématique, échanges équitables uniquement |
 
-Les tests de bout en bout (`test/e2e/`) rejouent automatiquement les scénarios métier et anti-triche ci-dessous : voir [Architecture DDD](13-architecture.md#tests-de-bout-en-bout).
+Les tests de bout en bout (`test/e2e/`) rejouent automatiquement les scénarios métier et anti-triche ci-dessous : voir [Architecture DDD](13-architecture.md#tests-de-bout-en-bout). Ils passent aussi contre l'API Symfony (`E2E_BACKEND=symfony`), dont les tests unitaires PHPUnit reprennent ceux de ce tableau et vérifient en plus que la boutique et le générateur pseudo-aléatoire donnent exactement les mêmes résultats qu'en Node : voir [la comparaison des deux backends](14-symfony-vs-nestjs.md#tests).
 
 ## Vérifications réalisées pendant le développement
 

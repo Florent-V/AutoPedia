@@ -19,6 +19,20 @@ docker compose up -d --build
 
 Les deux images applicatives sont construites en deux étapes, tournent avec l'utilisateur non-root `node` et partent de `node:22-bookworm-slim`.
 
+### Profil `symfony` : la version PHP de l'API
+
+```bash
+# .env : APP_SECRET=… (openssl rand -hex 32)
+docker compose --profile symfony up -d --build
+```
+
+| Service | Image | Rôle | Exposition |
+| --- | --- | --- | --- |
+| `api-symfony` | `apps/api-symfony/Dockerfile` (FrankenPHP) | API Symfony sur sa propre base `garage_symfony` : migrations Doctrine au démarrage, import du catalogue s'il est vide, worker du Scheduler (tâches de fond) dans le même conteneur ; photos dans le volume `media-symfony` | réseau interne |
+| `web-symfony` | `apps/web/Dockerfile` | Le même front, branché sur `api-symfony` | port `SYMFONY_WEB_PORT` (3002) |
+
+Les variables du jeu sont communes aux deux API (ancre `x-game-env` du fichier compose). Propres à Symfony : `APP_SECRET` (le conteneur refuse de démarrer sans), `SYMFONY_PUBLIC_URL`, `SYMFONY_WEB_PORT`. Voir [la comparaison des deux backends](14-symfony-vs-nestjs.md).
+
 ## Production
 
 - Placer un **reverse proxy HTTPS** (Caddy, Traefik, Nginx) devant `web`, puis mettre `TRUST_PROXY=true` et `PUBLIC_URL=https://…`. Le HTTPS est indispensable pour l'installation de la PWA et les notifications.

@@ -44,3 +44,4 @@ Cette documentation a deux volets :
 | 11 | [Évolutions possibles](technique/11-evolutions.md) | Pistes et dette connue |
 | 12 | [Bots : implémentation](technique/12-bots.md) | Boucle, personnalités, décisions, garde-fous |
 | 13 | [Architecture DDD et hexagonale](technique/13-architecture.md) | Contextes, couches, règles anti-triche, avancement de la refonte, tests de bout en bout |
+| 14 | [Backend Symfony : comparaison avec NestJS](technique/14-symfony-vs-nestjs.md) | La même API en PHP / Symfony / Doctrine : entités, contrôleurs, repositories, transactions, événements, tâches de fond, tests |
