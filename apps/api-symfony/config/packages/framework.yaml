@@ -1,0 +1,34 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    # API sans état : pas de session PHP (la session de jeu est un jeton en base, voir Identity).
+    session: false
+    http_method_override: false
+    handle_all_throwables: true
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host']
+    php_errors:
+        log: true
+
+    rate_limiter:
+        # Comptes : 10 tentatives de connexion et 5 inscriptions par minute et par IP.
+        sign_in:
+            policy: sliding_window
+            limit: 10
+            interval: '1 minute'
+        sign_up:
+            policy: sliding_window
+            limit: 5
+            interval: '1 minute'
+        # API : 20 requêtes par seconde et 300 par minute, par joueur (ou par IP).
+        api_burst:
+            policy: sliding_window
+            limit: 20
+            interval: '1 second'
+        api_minute:
+            policy: sliding_window
+            limit: 300
+            interval: '1 minute'
+
+when@test:
+    framework:
+        test: true

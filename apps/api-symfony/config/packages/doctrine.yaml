@@ -1,0 +1,55 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        server_version: '16'
+        use_savepoints: true
+        profiling_collect_backtrace: '%kernel.debug%'
+        # Types PostgreSQL du schéma (créés par la migration) connus de Doctrine pour la comparaison de schéma.
+        mapping_types:
+            rarity: rarity
+            gametype: game_type
+            gamestatus: game_status
+            tradestatus: trade_status
+            auctionstatus: auction_status
+            _int4: int_array
+        types:
+            int_array: App\Shared\Doctrine\Type\IntArrayType
+            rarity: App\Shared\Doctrine\Type\RarityType
+            game_type: App\Shared\Doctrine\Type\GameTypeType
+            game_status: App\Shared\Doctrine\Type\GameStatusType
+            trade_status: App\Shared\Doctrine\Type\TradeStatusType
+            auction_status: App\Shared\Doctrine\Type\AuctionStatusType
+    orm:
+        enable_lazy_ghost_objects: true
+        report_fields_where_declared: true
+        # Nom de colonne = nom de propriété (camelCase, comme le schéma Prisma), tous les identifiants entre guillemets.
+        naming_strategy: doctrine.orm.naming_strategy.default
+        quote_strategy: App\Shared\Doctrine\QuoteAllStrategy
+        auto_mapping: true
+        mappings:
+            App:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src'
+                prefix: 'App'
+                alias: App
+        controller_resolver:
+            auto_mapping: false
+
+when@prod:
+    doctrine:
+        orm:
+            proxy_dir: '%kernel.build_dir%/doctrine/orm/Proxies'
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

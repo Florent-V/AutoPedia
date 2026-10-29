@@ -1,0 +1,92 @@
+# Valeurs par défaut des variables d'environnement (mêmes noms et mêmes valeurs que le backend NestJS).
+parameters:
+    env(WEB_ORIGIN): 'http://localhost:3000'
+    env(PUBLIC_URL): 'http://localhost:3000'
+    env(TRUSTED_PROXIES): '127.0.0.1,REMOTE_ADDR'
+    env(LOG_LEVEL): 'info'
+    env(AUTH_RATE_LIMIT): 'on'
+    env(BOOSTER_REGEN_MINUTES): '30'
+    env(BOOSTER_MAX): '10'
+    env(BOOSTER_START): '10'
+    env(CARDS_PER_BOOSTER): '5'
+    env(PITY_EPIC): '10'
+    env(PITY_LEGENDARY): '60'
+    env(GAME_TIMEZONE): 'Europe/Paris'
+    env(STARTING_CREDITS): '100'
+    env(GAMES_PER_DAY): '3'
+    env(QUICK_GAMES_PER_DAY): '5'
+    env(DOORS_PER_DAY): '2'
+    env(TRADE_DAYS): '7'
+    env(MAX_OPEN_TRADES): '10'
+    env(AUCTION_FEE_PERCENT): '5'
+    env(MAX_OPEN_AUCTIONS): '5'
+    env(MARKET_MIN_ACCOUNT_HOURS): '24'
+    env(MARKET_MIN_BOOSTERS): '3'
+    env(TRADE_MAX_RARITY_GAP): '1'
+    env(SHOP_SECRET): ''
+    env(BACKGROUND_JOBS): 'on'
+    env(AUCTION_SETTLE_SECONDS): '30'
+    env(TRADE_EXPIRE_SECONDS): '600'
+    env(PUSH_CHECK_SECONDS): '60'
+    env(BOTS_ENABLED): 'true'
+    env(BOTS_COUNT): '12'
+    env(BOTS_START_CREDITS): '1500'
+    env(BOTS_TICK_SECONDS): '60'
+    env(CATALOG_IMPORT_LIMIT): '3000'
+    env(WIKI_CONTACT): 'https://github.com/Florent-V/AutoPedia'
+    env(WIKI_USER_AGENT): ''
+    env(WIKIMEDIA_TOKEN): ''
+    env(MEDIA_DIR): '%kernel.project_dir%/var/media'
+    env(MEDIA_REMOTE_FALLBACK): 'true'
+    env(MEDIA_SYNC): 'on'
+    env(MEDIA_SYNC_HOURS): '6'
+    env(VAPID_PUBLIC_KEY): ''
+    env(VAPID_PRIVATE_KEY): ''
+    env(VAPID_SUBJECT): 'mailto:contact@example.com'
+    env(PUSH_ALLOWED_HOSTS): 'fcm.googleapis.com,android.googleapis.com,updates.push.services.mozilla.com,.push.apple.com,.notify.windows.com'
+    env(ADMIN_TOKEN): ''
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/*/Entity/'
+            - '../src/*/Domain/'
+            - '../src/*/Event/'
+            - '../src/*/Dto/'
+
+    # Aléatoire cryptographique (les tests unitaires injectent une suite déterministe).
+    App\Shared\Domain\Random:
+        class: App\Shared\Domain\CryptoRandom
+
+    App\Shared\Domain\GameCalendar:
+        arguments: ['%env(GAME_TIMEZONE)%']
+
+    App\Shared\Http\PayloadResolver:
+        tags: [{ name: controller.argument_value_resolver, priority: 150 }]
+
+    # Réglages du jeu (lus une fois, typés).
+    App\Shared\Config\GameSettings:
+        arguments:
+            $boosterRegenMinutes: '%env(int:BOOSTER_REGEN_MINUTES)%'
+            $boosterMax: '%env(int:BOOSTER_MAX)%'
+            $boosterStart: '%env(int:BOOSTER_START)%'
+            $cardsPerBooster: '%env(int:CARDS_PER_BOOSTER)%'
+            $pityEpic: '%env(int:PITY_EPIC)%'
+            $pityLegendary: '%env(int:PITY_LEGENDARY)%'
+            $startingCredits: '%env(int:STARTING_CREDITS)%'
+            $gamesPerDay: '%env(int:GAMES_PER_DAY)%'
+            $quickGamesPerDay: '%env(int:QUICK_GAMES_PER_DAY)%'
+            $doorsPerDay: '%env(int:DOORS_PER_DAY)%'
+            $tradeDays: '%env(int:TRADE_DAYS)%'
+            $maxOpenTrades: '%env(int:MAX_OPEN_TRADES)%'
+            $auctionFeePercent: '%env(int:AUCTION_FEE_PERCENT)%'
+            $maxOpenAuctions: '%env(int:MAX_OPEN_AUCTIONS)%'
+            $marketMinAccountHours: '%env(int:MARKET_MIN_ACCOUNT_HOURS)%'
+            $marketMinBoosters: '%env(int:MARKET_MIN_BOOSTERS)%'
+            $tradeMaxRarityGap: '%env(int:TRADE_MAX_RARITY_GAP)%'
