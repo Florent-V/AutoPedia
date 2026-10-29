@@ -40,6 +40,7 @@ parameters:
     env(MEDIA_REMOTE_FALLBACK): 'true'
     env(MEDIA_SYNC): 'on'
     env(MEDIA_SYNC_HOURS): '6'
+    env(CATALOG_AUTO_IMPORT): 'wikidata'
     env(VAPID_PUBLIC_KEY): ''
     env(VAPID_PRIVATE_KEY): ''
     env(VAPID_SUBJECT): 'mailto:contact@example.com'

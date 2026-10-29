@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Catalog\Command;
 
+use App\Catalog\Repository\CarRepository;
 use App\Catalog\Service\CatalogImporter;
 use App\Catalog\Service\MediaSync;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ final class ImportCatalogCommand extends Command
     public function __construct(
         private readonly CatalogImporter $importer,
         private readonly MediaSync $media,
+        private readonly CarRepository $cars,
         #[Autowire(env: 'int:CATALOG_IMPORT_LIMIT')] private readonly int $defaultLimit,
         #[Autowire(env: 'MEDIA_SYNC')] private readonly string $mediaSync,
     ) {
@@ -32,7 +34,8 @@ final class ImportCatalogCommand extends Command
     {
         $this->addArgument('mode', InputArgument::OPTIONAL, 'wikidata, seed, media ou stats', 'wikidata')
             ->addArgument('limit', InputArgument::OPTIONAL, 'Nombre maximal de voitures')
-            ->addOption('no-media', null, InputOption::VALUE_NONE, 'Ne pas rapatrier photos et résumés');
+            ->addOption('no-media', null, InputOption::VALUE_NONE, 'Ne pas rapatrier photos et résumés')
+            ->addOption('if-empty', null, InputOption::VALUE_NONE, 'N’importer que si le catalogue est vide (démarrage du conteneur)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,7 +47,9 @@ final class ImportCatalogCommand extends Command
 
             return Command::INVALID;
         }
-        if ('wikidata' === $mode || 'seed' === $mode) {
+        // Au démarrage (comme NestJS) : import seulement si le catalogue est vide, sinon reprise des médias.
+        $skip = $input->getOption('if-empty') && $this->cars->activeCount() > 0;
+        if (!$skip && ('wikidata' === $mode || 'seed' === $mode)) {
             $limit = max(1, min(20_000, (int) ($input->getArgument('limit') ?? $this->defaultLimit)));
             $io->success('Résultat : '.json_encode($this->importer->import($mode, $limit)));
         }

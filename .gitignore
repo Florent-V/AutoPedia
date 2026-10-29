@@ -1,4 +1,6 @@
 .env
+# Symfony : .env contient les valeurs par défaut (sans secret), versionné par convention.
+!apps/api-symfony/.env
 node_modules
 .DS_Store
 apps/api/test/.media/

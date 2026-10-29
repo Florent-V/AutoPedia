@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "catalog:import": "node dist/cli/import-catalog",
-    "test:e2e": "nest build && jest --config test/jest-e2e.json --runInBand"
+    "test:e2e": "nest build && jest --config test/jest-e2e.json --runInBand",
+    "test:e2e:symfony": "E2E_BACKEND=symfony jest --config test/jest-e2e.json --runInBand"
   },
   "jest": {
     "moduleFileExtensions": [

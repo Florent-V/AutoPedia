@@ -1,5 +1,37 @@
 name: garage
 
+# Variables du jeu, communes aux deux backends (mêmes noms et valeurs par défaut).
+x-game-env: &game-env
+  BOOSTER_REGEN_MINUTES: ${BOOSTER_REGEN_MINUTES:-30}
+  BOOSTER_MAX: ${BOOSTER_MAX:-10}
+  CARDS_PER_BOOSTER: ${CARDS_PER_BOOSTER:-5}
+  CATALOG_AUTO_IMPORT: ${CATALOG_AUTO_IMPORT:-wikidata}
+  CATALOG_IMPORT_LIMIT: ${CATALOG_IMPORT_LIMIT:-3000}
+  ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@example.com}
+  WIKI_CONTACT: ${WIKI_CONTACT:-}
+  WIKIMEDIA_TOKEN: ${WIKIMEDIA_TOKEN:-}
+  MEDIA_DIR: /data/media
+  MEDIA_REMOTE_FALLBACK: ${MEDIA_REMOTE_FALLBACK:-true}
+  GAME_TIMEZONE: ${GAME_TIMEZONE:-Europe/Paris}
+  STARTING_CREDITS: ${STARTING_CREDITS:-100}
+  GAMES_PER_DAY: ${GAMES_PER_DAY:-3}
+  QUICK_GAMES_PER_DAY: ${QUICK_GAMES_PER_DAY:-5}
+  DOORS_PER_DAY: ${DOORS_PER_DAY:-2}
+  TRADE_DAYS: ${TRADE_DAYS:-7}
+  MAX_OPEN_TRADES: ${MAX_OPEN_TRADES:-10}
+  PITY_EPIC: ${PITY_EPIC:-10}
+  PITY_LEGENDARY: ${PITY_LEGENDARY:-60}
+  SHOP_SECRET: ${SHOP_SECRET:-}
+  AUCTION_FEE_PERCENT: ${AUCTION_FEE_PERCENT:-5}
+  MAX_OPEN_AUCTIONS: ${MAX_OPEN_AUCTIONS:-5}
+  BOTS_ENABLED: ${BOTS_ENABLED:-true}
+  BOTS_COUNT: ${BOTS_COUNT:-12}
+  BOTS_START_CREDITS: ${BOTS_START_CREDITS:-1500}
+  BOTS_TICK_SECONDS: ${BOTS_TICK_SECONDS:-60}
+
 services:
   db:
     image: postgres:17-alpine
@@ -31,35 +63,7 @@ services:
       BETTER_AUTH_URL: ${PUBLIC_URL:-http://localhost:3000}
       WEB_ORIGIN: ${PUBLIC_URL:-http://localhost:3000}
       PORT: 3001
-      BOOSTER_REGEN_MINUTES: ${BOOSTER_REGEN_MINUTES:-30}
-      BOOSTER_MAX: ${BOOSTER_MAX:-10}
-      CARDS_PER_BOOSTER: ${CARDS_PER_BOOSTER:-5}
-      CATALOG_AUTO_IMPORT: ${CATALOG_AUTO_IMPORT:-wikidata}
-      CATALOG_IMPORT_LIMIT: ${CATALOG_IMPORT_LIMIT:-3000}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@example.com}
-      WIKI_CONTACT: ${WIKI_CONTACT:-}
-      WIKIMEDIA_TOKEN: ${WIKIMEDIA_TOKEN:-}
-      MEDIA_DIR: /data/media
-      MEDIA_REMOTE_FALLBACK: ${MEDIA_REMOTE_FALLBACK:-true}
-      GAME_TIMEZONE: ${GAME_TIMEZONE:-Europe/Paris}
-      STARTING_CREDITS: ${STARTING_CREDITS:-100}
-      GAMES_PER_DAY: ${GAMES_PER_DAY:-3}
-      QUICK_GAMES_PER_DAY: ${QUICK_GAMES_PER_DAY:-5}
-      DOORS_PER_DAY: ${DOORS_PER_DAY:-2}
-      TRADE_DAYS: ${TRADE_DAYS:-7}
-      MAX_OPEN_TRADES: ${MAX_OPEN_TRADES:-10}
-      PITY_EPIC: ${PITY_EPIC:-10}
-      PITY_LEGENDARY: ${PITY_LEGENDARY:-60}
-      SHOP_SECRET: ${SHOP_SECRET:-}
-      AUCTION_FEE_PERCENT: ${AUCTION_FEE_PERCENT:-5}
-      MAX_OPEN_AUCTIONS: ${MAX_OPEN_AUCTIONS:-5}
-      BOTS_ENABLED: ${BOTS_ENABLED:-true}
-      BOTS_COUNT: ${BOTS_COUNT:-12}
-      BOTS_START_CREDITS: ${BOTS_START_CREDITS:-1500}
-      BOTS_TICK_SECONDS: ${BOTS_TICK_SECONDS:-60}
+      <<: *game-env
     volumes:
       - media:/data/media
 
@@ -74,6 +78,42 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
 
+  # --- Backend Symfony (comparaison) : docker compose --profile symfony up -d ---
+  # Même jeu, même schéma, mêmes routes : un second front (port 3002) l'utilise, avec sa propre base.
+  api-symfony:
+    profiles: [symfony]
+    build: ./apps/api-symfony
+    restart: unless-stopped
+    # init : récupère les processus d'arrière-plan (worker du Scheduler, import du catalogue).
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *game-env
+      DATABASE_URL: postgresql://garage:${POSTGRES_PASSWORD:-garage}@db:5432/garage_symfony?serverVersion=17&charset=utf8
+      # Obligatoire avec ce profil : sans lui (ou avec la valeur de développement), l'API refuse de démarrer.
+      APP_SECRET: ${APP_SECRET:-}
+      WEB_ORIGIN: ${SYMFONY_PUBLIC_URL:-http://localhost:3002}
+      PUBLIC_URL: ${SYMFONY_PUBLIC_URL:-http://localhost:3002}
+      TRUSTED_PROXIES: private_ranges
+      MEDIA_DIR: /data/media
+    volumes:
+      - media-symfony:/data/media
+
+  web-symfony:
+    profiles: [symfony]
+    build: ./apps/web
+    restart: unless-stopped
+    depends_on:
+      - api-symfony
+    environment:
+      NUXT_API_BASE: http://api-symfony:3001
+      NUXT_TRUST_PROXY: ${TRUST_PROXY:-false}
+    ports:
+      - "${SYMFONY_WEB_PORT:-3002}:3000"
+
 volumes:
   pgdata:
   media:
+  media-symfony:

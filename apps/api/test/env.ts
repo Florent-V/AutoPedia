@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const API_DIR = join(__dirname, '..');
+/** Backend testé : l'API NestJS (par défaut) ou sa version Symfony (apps/api-symfony), avec les mêmes tests. */
+export const E2E_BACKEND: 'nestjs' | 'symfony' = process.env.E2E_BACKEND === 'symfony' ? 'symfony' : 'nestjs';
+export const SYMFONY_DIR = join(API_DIR, '..', 'api-symfony');
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3101);
 export const E2E_API = `http://127.0.0.1:${E2E_PORT}`;
 export const E2E_ORIGIN = 'http://localhost:3000';
@@ -62,5 +65,22 @@ export function serverEnv(databaseUrl: string): NodeJS.ProcessEnv {
     MARKET_MIN_ACCOUNT_HOURS: '24',
     MARKET_MIN_BOOSTERS: '3',
     TRADE_MAX_RARITY_GAP: '1',
+  };
+}
+
+/** Variables du backend Symfony : mêmes réglages, au format attendu par Doctrine et Symfony. */
+export function symfonyEnv(databaseUrl: string): NodeJS.ProcessEnv {
+  const url = new URL(databaseUrl);
+  url.search = '?serverVersion=16&charset=utf8';
+  return {
+    ...serverEnv(databaseUrl),
+    APP_ENV: 'prod',
+    APP_DEBUG: '0',
+    APP_SECRET: 'e2e-app-secret-e2e-app-secret-0123',
+    DATABASE_URL: url.toString(),
+    // La limite des tentatives de connexion est coupée comme pour Better Auth sous NODE_ENV=test.
+    AUTH_RATE_LIMIT: 'off',
+    LOG_LEVEL: 'warning',
+    PHP_CLI_SERVER_WORKERS: '8',
   };
 }

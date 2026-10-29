@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Scheduler;
 
 use App\Bots\Job\BotsTick;
+use App\Catalog\Job\SyncMedia;
 use App\Marketplace\Job\ExpireTrades;
 use App\Marketplace\Job\SettleDueAuctions;
 use App\Notifications\Job\CheckFullReserves;
@@ -30,6 +31,8 @@ final readonly class BackgroundSchedule implements ScheduleProviderInterface
         #[Autowire(env: 'int:TRADE_EXPIRE_SECONDS')] private int $tradeExpireSeconds,
         #[Autowire(env: 'int:PUSH_CHECK_SECONDS')] private int $pushCheckSeconds,
         #[Autowire(env: 'int:BOTS_TICK_SECONDS')] private int $botsTickSeconds,
+        #[Autowire(env: 'int:MEDIA_SYNC_HOURS')] private int $mediaSyncHours,
+        #[Autowire(env: 'CATALOG_AUTO_IMPORT')] private string $catalogAutoImport,
     ) {
     }
 
@@ -40,11 +43,16 @@ final readonly class BackgroundSchedule implements ScheduleProviderInterface
             return $schedule;
         }
 
-        return $schedule->with(
+        $schedule->add(
             RecurringMessage::every(max(1, $this->auctionSettleSeconds).' seconds', new SettleDueAuctions()),
             RecurringMessage::every(max(1, $this->tradeExpireSeconds).' seconds', new ExpireTrades()),
             RecurringMessage::every(max(1, $this->pushCheckSeconds).' seconds', new CheckFullReserves()),
             RecurringMessage::every(max(1, $this->botsTickSeconds).' seconds', new BotsTick()),
         );
+        if ($this->mediaSyncHours > 0 && 'off' !== $this->catalogAutoImport) {
+            $schedule->add(RecurringMessage::every($this->mediaSyncHours.' hours', new SyncMedia()));
+        }
+
+        return $schedule;
     }
 }

@@ -1,13 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 
-/** Arrête l'API de test et supprime la base temporaire créée par ce lancement (sauf E2E_KEEP_DB=1). */
+/** Arrête l'API de test (et le worker Symfony) puis supprime la base temporaire de ce lancement (sauf E2E_KEEP_DB=1). */
 export default async function globalTeardown() {
-  const server = globalThis.__E2E_SERVER__;
-  if (server && server.exitCode === null) {
+  for (const p of [globalThis.__E2E_SERVER__, globalThis.__E2E_WORKER__]) {
+    if (!p?.pid || p.exitCode !== null) continue;
+    const pid = p.pid;
+    // Signal envoyé au groupe de processus (lancé en « detached ») : serveur et sous-processus.
     await new Promise<void>((resolve) => {
-      server.once('exit', () => resolve());
-      server.kill('SIGTERM');
-      setTimeout(() => server.kill('SIGKILL'), 5000).unref();
+      p.once('exit', () => resolve());
+      process.kill(-pid, 'SIGTERM');
+      setTimeout(() => {
+        try {
+          process.kill(-pid, 'SIGKILL');
+        } catch {
+          /* déjà arrêté */
+        }
+      }, 5000).unref();
     });
   }
   const database = globalThis.__E2E_DATABASE__;
